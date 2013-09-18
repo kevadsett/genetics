@@ -11,6 +11,7 @@ window.requestAnimFrame = (function(){
 function Game() {
     $(document).ready($.proxy(function() {
         Events(this);
+        $('body').append('<div id="canvasContainer"><canvas id="gameCanvas"></canvas></div>');
         this.canvas = document.getElementById('gameCanvas');
         this.resizeCanvas();
         for(var i = 0; i < 25; i++) {
@@ -31,8 +32,12 @@ Game.prototype = {
         this.emit('render');
     },
     resizeCanvas: function() {
-        this.width = this.canvas.width = $(document).innerWidth();
-        this.height = this.canvas.height = $(document).innerHeight();
+        var canvas = document.getElementById("gameCanvas"),
+            container = document.getElementById("canvasContainer");
+        this.width = canvas.width = container.clientWidth;
+        this.height = canvas.height = canvas.width / 1.33;
+        container.style.marginTop = -canvas.height / 2;
+        container.style.marginLeft = -canvas.width / 2;
     },
     update: function() {
         this.emit('update');

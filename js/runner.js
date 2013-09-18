@@ -5,9 +5,9 @@ function RunnerModel(position) {
         this.position = new Vector(randomInt(0, game.width), randomInt(0, game.height));
     }
     this.angle = randomInt(0, 360);
-    this.size = 10;
+    this.size = 25;
     this.colour = {r:randomInt(0,255), g:randomInt(0,255), b:randomInt(0,255)};
-    this.speed = randomInt(5,10);
+    this.speed = randomInt(2,5);
 }
 
 function RunnerView(model, context) {
@@ -42,7 +42,7 @@ function RunnerController(model) {
 
 RunnerController.prototype = {
     update:function() {
-        this.advance(15);
+        this.advance(this.model.speed);
         if(this.model.position.x  > game.width + this.model.size) this.model.position.x = -this.model.size;
         if(this.model.position.x < -this.model.size) this.model.position.x = game.width + this.model.size;
         if(this.model.position.y > game.height + this.model.size) this.model.position.y = -this.model.size;
