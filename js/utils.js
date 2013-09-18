@@ -48,3 +48,21 @@ function degToRad(degrees) {
 function radToDeg(radians) {
     return radians * (180 / Math.PI);
 }
+
+function getAgentsAt(x, y) {
+    var agentsAtCoords = [], i, runner;
+    for (i = 0; i < game.runners.length; i++) {
+        runner = game.runners[i].model;
+        runner.selected = false;
+        if(coordinateIsWithinBounds(x,
+                                    y, 
+                                    runner.position.y - runner.gene.size / 2,
+                                    runner.position.x + runner.gene.size / 2,
+                                    runner.position.y + runner.gene.size / 2,
+                                    runner.position.x - runner.gene.size / 2)) {
+            runner.selected = true;
+            agentsAtCoords.push(runner);
+        }
+    }
+    return agentsAtCoords;
+}
