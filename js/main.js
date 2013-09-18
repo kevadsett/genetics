@@ -14,9 +14,17 @@ function Game() {
         $('body').append('<div id="canvasContainer"><canvas id="gameCanvas"></canvas></div>');
         this.canvas = document.getElementById('gameCanvas');
         this.resizeCanvas();
-        for(var i = 0; i < 25; i++) {
-            new RunnerController(new RunnerModel());
+        this.runners = [];
+        for(var i = 0; i < 50; i++) {
+            this.runners.push(new RunnerController(new RunnerModel()));
         }
+        
+        this.canvas.onclick = function(event) {
+            var canvasBounds = event.target.getBoundingClientRect();
+            var clickedAgents = getAgentsAt(event.clientX - canvasBounds.left, event.clientY - canvasBounds.top);
+            if(clickedAgents.length > 0) console.log(clickedAgents);
+        };
+        
         this.loop();
     }, this));
 }
