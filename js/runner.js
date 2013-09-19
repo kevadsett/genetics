@@ -4,6 +4,7 @@ function RunnerModel(position) {
         angleConfidence: Math.random(),
         speedConfidence: (Math.random() / 2) + 0.5,
         size: randomInt(10, 20),
+        senseRadius: randomInt(0, 100)
     };
     if(position) {
         this.position = position;
@@ -29,21 +30,27 @@ RunnerView.prototype = {
         
         this.context.translate(this.model.position.x, this.model.position.y);
         
-        this.context.fillStyle = rgbObjToHexColourString(this.model.colour);
         this.context.rotate(degToRad(this.model.angle));
+        
+        this.context.fillStyle = rgbObjToHexColourString(this.model.colour);
+    
         
         this.context.fillRect(-this.model.gene.size/2, -this.model.gene.size/2, this.model.gene.size, this.model.gene.size);
         this.context.rect(-this.model.gene.size/2, -this.model.gene.size/2, this.model.gene.size, this.model.gene.size);
         
         this.context.strokeWidth = this.sizeMultiple;
         this.context.strokeStyle = this.model.selected ? rgbObjToHexColourString({r:255, g:0, b:255}) : "#000000";
+        this.context.beginPath();
+        var size = this.model.gene.size/2;
+        this.context.moveTo(size/2, size/3);
+        this.context.lineTo(size - (size/10), size/3);
         this.context.stroke();
         this.context.beginPath();
-        this.context.moveTo(0, 0);
-        this.context.lineTo(this.model.gene.size/2, 0);
+        this.context.moveTo(size/2, -size/3);
+        this.context.lineTo(size - (size/10), -size/3);
         this.context.stroke();
+        this.context.closePath();
         this.context.strokeStyle = "#000000";
-        
         this.context.restore();
     }
 }

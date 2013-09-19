@@ -49,7 +49,7 @@ function radToDeg(radians) {
     return radians * (180 / Math.PI);
 }
 
-function getAgentsAt(x, y) {
+function getAgentAt(x, y) {
     var agentsAtCoords = [], i, runner;
     for (i = 0; i < game.runners.length; i++) {
         runner = game.runners[i].model;
@@ -66,3 +66,7 @@ function getAgentsAt(x, y) {
     }
     return agentsAtCoords;
 }
+
+/*ction getObjectsNear(x,y,radius) {
+}
+}*/
