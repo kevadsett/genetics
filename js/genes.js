@@ -29,6 +29,21 @@ Chromosome.prototype = {
             }
         }
     },
+    getValue:function(type) {
+        if(this.strand[0][type].dominant) {
+            if(this.strand[1][type].dominant) {
+                return (this.strand[0][type].value + this.strand[1][type].value)/2;
+            } else {
+                this.strand[0][type].value;
+            }
+        } else {
+            if(this.strand[1][type].dominant) {
+                return this.strand[1][type].value;
+            } else {
+                this.strand[0][type].value;
+            }
+        }
+    },
     meiosis: function() {
         
     }
