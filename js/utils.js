@@ -86,3 +86,15 @@ function cloneObject(objectToClone) {
     }
     return clone;
 }
+
+// Pythag :)
+function distance(position1, position2) {
+    var sides = new Vector(position2.x - position1.x, position2.y - position1.y),
+        squareSides = new Vector(sides.x * sides.x, sides.y * sides.y);
+    return Math.sqrt(squareSides.x + squareSides.y);
+}
+
+function getAngle(position1, position2) {
+    var sides = new Vector(position2.x - position1.x, position2.y - position1.y);
+    return (360 + radToDeg(Math.atan2(sides.y, sides.x))) % 360;
+}
