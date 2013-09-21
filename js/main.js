@@ -11,7 +11,7 @@ function Game() {
     $(document).ready($.proxy(function() {
         Events(this);
         $('body').append('<div id="canvasContainer"><canvas id="gameCanvas"></canvas></div>');
-        this.numberOfDudes = 15;
+        this.numberOfDudes = 1;
         this.setup();
         this.loop();
     }, this));
@@ -24,10 +24,7 @@ Game.prototype = {
         this.render();
     },
     render: function() {
-        this.context.fillStyle = "#FFFFFF";
-        this.context.globalAlpha = 0.06;
-        this.context.fillRect(0, 0, this.width, this.height);
-        this.context.globalAlpha = 1;
+        this.context.clearRect(0, 0, this.width, this.height);
         this.emit('render');
     },
     resizeCanvas: function() {
