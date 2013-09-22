@@ -11,7 +11,9 @@ function Game() {
     $(document).ready($.proxy(function() {
         Events(this);
         $('body').append('<div id="canvasContainer"><canvas id="gameCanvas"></canvas></div>');
-        this.numberOfDudes = 1;
+        this.numberOfDudes = 10;
+        this.frame = 0;
+        this.slowFrameRate = 1;
         this.setup();
         this.loop();
     }, this));
@@ -20,8 +22,12 @@ function Game() {
 Game.prototype = {
     loop: function() {
         requestAnimFrame($.proxy(this.loop, this));
-        this.update();
-        this.render();
+        if(this.frame == this.slowFrameRate) {
+            this.update();
+            this.render();
+            this.frame = 0;
+        }
+        this.frame ++;
     },
     render: function() {
         this.context.clearRect(0, 0, this.width, this.height);
