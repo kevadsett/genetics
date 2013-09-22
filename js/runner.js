@@ -7,21 +7,27 @@ function RunnerModel(position) {
         speedConfidence: (Math.random() / 2) + 0.5,
         tailLength: randomInt(0,3),
         size: randomInt(10, 20),
-        senseRadius: 100,//randomInt(0, 100),
+        senseRadius: randomInt(0, 100),
         directionalBias: (Math.random() * 2) - 1,
         caresAboutObjects: Math.random(),
-        tendencyToAvoid: Math.random(),
-        objectSpeedUp: Math.random() * 2
+        objectSpeedUp: Math.random() * 2,
+        colourVariation: Math.random(),
+        brightnessVariation: Math.random(),
+        spineColourDeviation: Math.random(),
+        red: randomInt(0,256),
+        green: randomInt(0,256),
+        blue: randomInt(0,256)
     };
     if(position) {
         this.position = position;
     } else {
         this.position = new Vector(randomInt(0, game.width), randomInt(0, game.height));
     }
+    this.angleConfidence = this.gene.angleConfidence;
     this.angle = randomInt(0, 360);
-    this.colour = {r:randomInt(0,255), g:randomInt(0,255), b:randomInt(0,255)};
+    this.colour = {r:this.gene.red, g:this.gene.green, b:this.gene.blue};
     this.sizeMultiple = 2 * this.gene.size / 10;
-    this.gene.speed = this.sizeMultiple * this.gene.speedConfidence;
+    this.speed = this.sizeMultiple * this.gene.speedConfidence;
     switch(this.gene.tailLength) {
         case 0:
             this.tailLength = randomInt(10, 20);
@@ -36,16 +42,21 @@ function RunnerModel(position) {
     this.tailSpacing = 5;
     this.tailIndex = 0;
     this.tail = new Array(this.tailLength);
+    this.tailColours = new Array(this.tailLength);
+    var originalColour = this.colour;
+    for(var i = 0; i < this.tailLength; i++) {
+        var varyColourBy = mapValue(this.gene.brightnessVariation, 0, 1, 0, (Math.random() * 2) - 1);
+        var brightnessModifier = parseInt(mapValue(varyColourBy, -1, 1, -100, 100));
+        var newTailColour = brightenColour(originalColour, brightnessModifier);
+        this.tailColours[i] = newTailColour;
+    }
+    
     for(var i = 0; i < this.tailLength; i++) {
         this.tail[i] = {position: this.position.copy(), angle: this.angle};
     }
     this.framesInExistance = 0;
     this.totalPreviousPositions = this.tailLength * this.tailSpacing;
-    this.previousPositions = new Array(this.totalPreviousPositions);
-    for(var i = 0; i < this.totalPreviousPositions; i++) {
-        this.previousPositions[i] = {};
-    }
-    console.log(this.gene);
+    this.previousPositions = [];
 }
 
 function RunnerView(model, context) {
@@ -59,6 +70,7 @@ RunnerView.prototype = {
         this.context.lineWidth = 2;
         
         for(var i = 0; i < this.model.tailLength; i++) {
+            this.context.fillStyle = rgbObjToHexColourString(this.model.tailColours[i]);
             this.renderBodySegment(this.model.tail[i].position, this.model.tail[i].angle);
         }
         
@@ -71,8 +83,6 @@ RunnerView.prototype = {
         this.context.translate(position.x, position.y);
         
         this.context.rotate(degToRad(angle));
-        
-        this.context.fillStyle = rgbObjToHexColourString(this.model.colour);
         
         this.context.fillRect(-this.model.gene.size/2, -this.model.gene.size/2, this.model.gene.size, this.model.gene.size);
         this.context.restore();
@@ -99,6 +109,25 @@ RunnerView.prototype = {
         this.context.closePath();
         this.context.strokeStyle = "#000000";
         this.context.restore();
+    },
+    
+    renderSpine: function() {
+        this.context.strokeStyle = rgbObjToHexColourString(this.model.colour);
+        this.context.beginPath();
+        
+        this.context.moveTo(this.model.tail[0].position.x, this.model.tail[0].position.y);
+        
+        for(var i = 0; i < this.model.tail.length; i++) {
+            var currentTailSegment = this.model.tail[i];
+            if(!!currentTailSegment.position) {
+                if(!!this.model.tail[i+1] && !!this.model.tail[i+1].position) {
+                    this.context.lineTo(this.model.tail[i+1].position.x, this.model.tail[i+1].position.y);
+                    this.context.stroke();
+                }
+            }
+        }
+        /*this.context.moveTo(this.model.tail[0].position.x, this.model.tail[0].position.y);
+        this.context.closePath();*/
     }
 }
 
@@ -208,7 +237,7 @@ RunnerController.prototype = {
         this.storePreviousPositions();
         this.updateTailSegments();
         this.changeDirection();
-        this.advance(this.model.gene.speed);
+        this.advance(this.model.speed);
         this.model.framesInExistance++;
     },
     
@@ -216,9 +245,11 @@ RunnerController.prototype = {
         for (var i = 0; i < this.model.tailLength; i++) {
             var currentSegment = this.model.tail[i],
                 spacing = this.model.tailSpacing,
-                previousPositionIndex = (spacing*i) + (this.model.framesInExistance % spacing);
-            currentSegment.position = this.model.previousPositions[previousPositionIndex].position;
-            currentSegment.angle = this.model.previousPositions[previousPositionIndex].angle;
+                previousPositionIndex = i * spacing;
+            if(previousPositionIndex < this.model.previousPositions.length) {
+                currentSegment.position = this.model.previousPositions[previousPositionIndex].position;
+                currentSegment.angle = this.model.previousPositions[previousPositionIndex].angle;
+            }
         }
     },
     
@@ -226,7 +257,7 @@ RunnerController.prototype = {
         var prevPos = this.model.previousPositions,
             frames = this.model.framesInExistance,
             numPos = this.model.totalPreviousPositions;
-        prevPos[frames % numPos].position = this.model.position.copy();
-        prevPos[frames % numPos].angle = this.model.angle;
+        this.model.previousPositions.unshift({position: this.model.position.copy(), angle: this.model.angle});
+        if(this.model.previousPositions.length > this.model.totalPreviousPositions) this.model.previousPositions.pop();
     }
 }

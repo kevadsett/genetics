@@ -98,3 +98,19 @@ function getAngle(position1, position2) {
     var sides = new Vector(position2.x - position1.x, position2.y - position1.y);
     return (360 + radToDeg(Math.atan2(sides.y, sides.x))) % 360;
 }
+
+function brightenColour(originalColour, brightnessModifier) {
+    if(!!originalColour.indexOf) {// it's a string
+        originalColour = hexColourStringToRgbObj(originalColour);
+    }
+    var newR = limitColourValue(originalColour.r + brightnessModifier),
+        newG = limitColourValue(originalColour.g + brightnessModifier),
+        newB = limitColourValue(originalColour.b + brightnessModifier);
+    return {r:newR, g: newG, b: newB};
+}
+
+function limitColourValue(value) {
+    if(value > 255) value = 255;
+    if(value < 0) value = 0;
+    return value;
+}
