@@ -1,68 +1,27 @@
-function RunnerModel(position) {
-    this.behaviour = new Chromosome(["pathConfidence", "angleConfidence", "speedConfidence", "size", "senseRadius"]);
-    this.appearance = new Chromosome(["tailLength", "size", "red", "green", "blue"]);
-    this.gene = {
-        pathConfidence: Math.random(),
-        angleConfidence: Math.random(),
-        speedConfidence: (Math.random() / 2) + 0.5,
-        tailLength: randomInt(0,3),
-        size: randomInt(10, 20),
-        senseRadius: 100,//randomInt(0, 100),
-        directionalBias: Math.random(),
-        caresAboutObjects: Math.random(),
-        objectSpeedUp: Math.random() * 2,
-        objectChangeDirection: Math.random(),
-        objectAngleConfidence: Math.random(),
-        objectPathConfidence: Math.random(),
-        colourVariation: Math.random(),
-        brightnessVariation: Math.random(),
-        spineColourDeviation: Math.random(),
-        red: randomInt(0,256),
-        green: randomInt(0,256),
-        blue: randomInt(0,256)
+function RunnerModel() {
+    this.genes = {
+    behaviour: new Chromosome(
+        ["pathConfidence", 
+         "angleConfidence", 
+         "speedConfidence", 
+         "senseRadius",
+         "caresAboutObjects",
+         "objectAffectsSpeed",
+         "objectAffectsDirection",
+         "objectAffectsAngleConfidence",
+         "objectAffectsPathConfidence",
+         "directionalBias"
+        ]),
+     appearance: new Chromosome(
+         ["tailLength", 
+          "size",
+          "colourVariation",
+          "brightnessVariation",
+          "red", 
+          "green",
+          "blue"
+         ])
     };
-    if(position) {
-        this.position = position;
-    } else {
-        this.position = new Vector(randomInt(0, game.width), randomInt(0, game.height));
-    }
-    this.angleConfidence = this.gene.angleConfidence;
-    this.directionalBias = this.gene.directionalBias;
-    this.angle = randomInt(0, 360);
-    this.colour = {r:this.gene.red, g:this.gene.green, b:this.gene.blue};
-    this.sizeMultiple = 2 * this.gene.size / 10;
-    this.movementSpeed = this.speed = this.sizeMultiple * this.gene.speedConfidence;
-    switch(this.gene.tailLength) {
-        case 0:
-            this.tailLength = randomInt(10, 20);
-            break;
-        case 1:
-            this.tailLength = randomInt(20,30);
-            break;
-        case 2:
-            this.tailLength = randomInt(30, 40);
-            break;
-    } 
-    this.tailSpacing = 5;
-    this.tailIndex = 0;
-    this.tail = new Array(this.tailLength);
-    this.tailColours = new Array(this.tailLength);
-    var originalColour = this.colour;
-    for(var i = 0; i < this.tailLength; i++) {
-        var varyColourBy = mapValue(this.gene.brightnessVariation, 0, 1, 0, (Math.random() * 2) - 1);
-        var brightnessModifier = parseInt(mapValue(varyColourBy, -1, 1, -100, 100));
-        var newTailColour = brightenColour(originalColour, brightnessModifier);
-        this.tailColours[i] = newTailColour;
-    }
-    
-    for(var i = 0; i < this.tailLength; i++) {
-        this.tail[i] = {position: this.position.copy(), angle: this.angle};
-    }
-    this.framesInExistance = 0;
-    this.totalPreviousPositions = this.tailLength * this.tailSpacing;
-    this.previousPositions = [];
-    
-    console.log(this.gene);
 }
 
 function RunnerView(model, context) {
@@ -75,22 +34,25 @@ RunnerView.prototype = {
     render: function() {
         this.context.lineWidth = 2;
         
+        this.context.fillStyle = this.model.tailColours[0];
+        this.renderBodySegment(this.model.position, this.model.angle);
+        
         for(var i = 0; i < this.model.tailLength; i++) {
-            this.context.fillStyle = rgbObjToHexColourString(this.model.tailColours[i]);
-            this.renderBodySegment(this.model.tail[i].position, this.model.tail[i].angle);
+            this.context.fillStyle = this.model.tailColours[i];
+            this.renderBodySegment(this.model.tail[i].position, this.model.tail[i].angle, i);
         }
         
         this.renderEyes(this.model.position, this.model.angle);
     },
     
-    renderBodySegment: function(position, angle) {
+    renderBodySegment: function(position, angle, index) {
         if(!position) return;
         this.context.save();
         this.context.translate(position.x, position.y);
         
         this.context.rotate(degToRad(angle));
-        
-        this.context.fillRect(-this.model.gene.size/2, -this.model.gene.size/2, this.model.gene.size, this.model.gene.size);
+        var size = this.model.size * mapValue(index, 0, this.model.tailLength, 1, 0.3);
+        this.context.fillRect(-size/2, -size/2, size, size);
         this.context.restore();
     },
     
@@ -104,7 +66,7 @@ RunnerView.prototype = {
         this.context.strokeWidth = this.sizeMultiple;
         this.context.strokeStyle = this.model.selected ? rgbObjToHexColourString({r:255, g:0, b:255}) : "#000000";
         this.context.beginPath();
-        var size = this.model.gene.size/2;
+        var size = this.model.size;
         this.context.moveTo(size/2, size/3);
         this.context.lineTo(size - (size/10), size/3);
         this.context.stroke();
@@ -115,30 +77,12 @@ RunnerView.prototype = {
         this.context.closePath();
         this.context.strokeStyle = "#000000";
         this.context.restore();
-    },
-    
-    renderSpine: function() {
-        this.context.strokeStyle = rgbObjToHexColourString(this.model.colour);
-        this.context.beginPath();
-        
-        this.context.moveTo(this.model.tail[0].position.x, this.model.tail[0].position.y);
-        
-        for(var i = 0; i < this.model.tail.length; i++) {
-            var currentTailSegment = this.model.tail[i];
-            if(!!currentTailSegment.position) {
-                if(!!this.model.tail[i+1] && !!this.model.tail[i+1].position) {
-                    this.context.lineTo(this.model.tail[i+1].position.x, this.model.tail[i+1].position.y);
-                    this.context.stroke();
-                }
-            }
-        }
-        /*this.context.moveTo(this.model.tail[0].position.x, this.model.tail[0].position.y);
-        this.context.closePath();*/
     }
 }
 
 function RunnerController(model) {
     this.model = model;
+    this.setupAttributes();
     this.view = new RunnerView(model, game.canvas.getContext('2d'));
     game.on('update', this.update, this);
 }
@@ -151,38 +95,22 @@ RunnerController.prototype = {
     },
     
     checkForBoundaries: function() {
-        var bounceAngle = 20;
-        if(this.model.position.x - this.model.gene.size < 0) {
-            if(this.model.angle > 180) {
-                this.model.angle += bounceAngle;
-            } else {
-                this.model.angle -= bounceAngle;
-            }
-        } else if (this.model.position.x + this.model.gene.size > game.width) {
-            if(this.model.angle > 180) {
-                this.model.angle -= bounceAngle;
-            } else {
-                this.model.angle += bounceAngle;
-            }
+        var size = this.model.size;
+        if(this.model.position.x < -size) {
+            this.model.position.x = game.width + size;
+        } else if (this.model.position.x > game.width + size) {
+            this.model.position.x = -size;
         }
-        if(this.model.position.y - this.model.gene.size < 0) {
-            if(this.model.angle > 270) {
-                this.model.angle += bounceAngle;
-            } else {
-                this.model.angle -= bounceAngle;
-            }
-        } else if (this.model.position.y + this.model.gene.size > game.height) {
-            if(this.model.angle > 90) {
-                this.model.angle += bounceAngle;
-            } else {
-                this.model.angle -= bounceAngle;
-            }
+        if(this.model.position.y < -size) {
+            this.model.position.y = game.height + size;
+        } else if (this.model.position.y > game.height + size) {
+            this.model.position.y = -size;
         }
     },
     
     changeDirection: function() {
-        if(Math.random() > this.model.gene.pathConfidence) {
-            var angleChange = mapValue(this.model.gene.angleConfidence, 0, 1, randomInt(0,30), 0);
+        if(Math.random() > this.model.genes.behaviour.getValue("pathConfidence")) {
+            var angleChange = mapValue(this.model.genes.behaviour.getValue("angleConfidence"), 0, 1, randomInt(0,30), 0);
             if(Math.random() < this.model.directionalBias) {
                 angleChange = - angleChange;
             }
@@ -195,12 +123,12 @@ RunnerController.prototype = {
         for(var i = 0; i < game.numberOfDudes; i++) {
             if(game.runners[i] != this) {
                 var currentRunner = game.runners[i].model;
-                if(distance(this.model.position, currentRunner.position) < this.model.gene.senseRadius) {
+                if(distance(this.model.position, currentRunner.position) < this.model.genes.behaviour.getValue("senseRadius") * 100) {
                     detectedObjects.push(game.runners[i].model);
                 }
             }
         }
-        if(distance(this.model.position, game.ball.model.position) < this.model.gene.senseRadius) {
+        if(distance(this.model.position, game.ball.model.position) < this.model.genes.behaviour.getValue("senseRadius") * 100) {
             detectedObjects.push(game.ball.model);
         }
         return detectedObjects;
@@ -229,22 +157,78 @@ RunnerController.prototype = {
         }
     },
     
+    setupAttributes: function() {
+        var model = this.model,
+            genes = this.model.genes;
+        genes.behaviour.generateRandomData();
+        genes.appearance.generateRandomData();
+        model.position = new Vector(randomInt(0, game.width), randomInt(0, game.height));
+        model.angleConfidence = genes.behaviour.getValue("angleConfidence");
+        model.directionalBias = genes.behaviour.getValue("angleConfidence");
+        model.angle = randomInt(0, 360);
+        var r = parseInt(genes.appearance.getValue("red") * 255),
+            g = parseInt(genes.appearance.getValue("green") * 255),
+            b = parseInt(genes.appearance.getValue("blue") * 255);
+        model.colour = {r:r, g:g, b:b};
+        model.size = mapValue(genes.appearance.getValue("size"), 0, 1, 10, 20);
+        model.sizeMultiple = 2 * model.size / 10;
+        model.movementSpeed = model.speed = model.sizeMultiple * ((genes.behaviour.getValue("speedConfidence") / 2) + 0.5);
+        this.setupTail();
+        model.framesInExistance = 0;
+        model.totalPreviousPositions = model.tailLength * model.tailSpacing;
+        model.previousPositions = [];
+        
+        console.log(model.genes);
+    },
+    
+    setupTail: function() {
+        var model = this.model,
+            genes = this.model.genes;
+        switch(Math.round(genes.appearance.getValue("tailLength") * 2)) {
+            case 0:
+                model.tailLength = randomInt(10, 20);
+                break;
+            case 1:
+                model.tailLength = randomInt(20,30);
+                break;
+            case 2:
+                model.tailLength = randomInt(30, 40);
+                break;
+        } 
+        model.tailSpacing = 2;
+        model.tailIndex = 0;
+        model.tail = new Array(model.tailLength);
+        model.tailColours = new Array(model.tailLength);
+        var originalColour = model.colour;
+        console.log(originalColour);
+        for(var i = 0; i < model.tailLength; i++) {
+            var varyColourBy = mapValue(genes.appearance.getValue("brightnessVariation"), 0, 1, 0, (Math.random() * 2) - 1);
+            var brightnessModifier = parseInt(mapValue(varyColourBy, -1, 1, -100, 100));
+            var newTailColour = brightenColour(originalColour, brightnessModifier);
+            model.tailColours[i] = rgbObjToHexColourString(newTailColour);
+        }
+        
+        for(var i = 0; i < model.tailLength; i++) {
+            model.tail[i] = {position: model.position.copy(), angle: model.angle};
+        }
+    },
+    
     reactToObjects: function() {
         var distanceToNearestObject = this.getDistanceToNearestObject();
         if(distanceToNearestObject > -1) {
             //speed
-            var newMaxSpeed = this.model.movementSpeed * this.model.gene.objectSpeedUp;
-            this.model.speed = mapValue(distanceToNearestObject, 0, this.model.gene.senseRadius, newMaxSpeed, this.model.movementSpeed);
+            var newMaxSpeed = this.model.movementSpeed * this.model.genes.behaviour.getValue("objectAffectsSpeed") * 2;
+            this.model.speed = mapValue(distanceToNearestObject, 0, this.model.genes.behaviour.getValue("senseRadius") * 100, newMaxSpeed, this.model.movementSpeed);
             
             //direction
-            var normalisedDistance = mapValue(distanceToNearestObject, 0, this.model.gene.senseRadius, 0, 1),
-                objectEffect = this.model.gene.caresAboutObjects * normalisedDistance,
-                changeDirection = this.model.gene.objectChangeDirection * objectEffect,
+            var normalisedDistance = mapValue(distanceToNearestObject, 0, this.model.genes.behaviour.getValue("senseRadius") * 100, 0, 1),
+                objectEffect = this.model.genes.behaviour.getValue("caresAboutObjects") * normalisedDistance,
+                changeDirection = this.model.genes.behaviour.getValue("objectAffectsDirection") * objectEffect,
                 newDirectionalBias = limitNumber(this.model.directionalBias + changeDirection, 0, 1);
-            this.model.directionalBias = mapValue(normalisedDistance, 0, 1, newDirectionalBias, this.model.gene.directionalBias);
+            this.model.directionalBias = mapValue(normalisedDistance, 0, 1, newDirectionalBias, this.model.genes.behaviour.getValue("directionalBias"));
         } else {
             this.model.speed = this.model.movementSpeed;
-            this.model.directionalBias = this.model.gene.directionalBias;
+            this.model.directionalBias = this.model.genes.behaviour.getValue("directionalBias");
         }
     },
     

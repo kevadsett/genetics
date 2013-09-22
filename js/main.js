@@ -11,7 +11,7 @@ function Game() {
     $(document).ready($.proxy(function() {
         Events(this);
         $('body').append('<div id="canvasContainer"><canvas id="gameCanvas"></canvas></div>');
-        this.numberOfDudes = 10;
+        this.numberOfDudes = 20;
         this.frame = 0;
         this.slowFrameRate = 1;
         this.setup();

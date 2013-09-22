@@ -6,19 +6,47 @@ function Allele(type, value, dominant) {
 
 Allele.prototype = {
     generateRandomData: function() {
-        this.value = Math.random();
-        this.dominant = Math.random() >= 0.5;
+        var randomValue = Math.random();
+        if(allelDominance[this.type].type == "loMedHi") {
+            switch (true) {
+                case randomValue < 0.3333:
+                    this.stringValue = "low";
+                    this.dominant = allelDominance[this.type].low;
+                    break;
+                case randomValue < 0.6667:
+                    this.stringValue = "medium";
+                    this.dominant = allelDominance[this.type].medium;
+                    break;
+                case randomValue <= 1:
+                    this.stringValue = "high";
+                    this.dominant = allelDominance[this.type].high;
+                break;
+            }
+        } else if (allelDominance[this.type].type == "loHi") {
+            switch (true) {
+                case randomValue < 0.5:
+                    this.stringValue = "low";
+                    this.dominant = allelDominance[this.type].low;
+                    break;
+                case randomValue <=1:
+                    this.stringValue = "high";
+                    this.dominant = allelDominance[this.type].high;
+                break;
+            }
+        }
+        this.value = randomValue;
     }
 }
 
 function Chromosome(types) {
     this.strands = new Array(2);
-    this.loci = {};
+    this.loci = types;
+    var loci = {};
     for(var i = 0; i < types.length; i++) {
-        this.loci[types[i]] = new Allele(types[i]);
+        loci[types[i]] = new Allele(types[i]);
     }
-    this.strands[0] = this.loci;
-    this.strands[1] = cloneObject(this.loci);
+    this.strands[0] = cloneObject(loci);
+    this.strands[1] = cloneObject(loci);
 }
 
 Chromosome.prototype = {
@@ -30,17 +58,25 @@ Chromosome.prototype = {
         }
     },
     getValue:function(type) {
-        if(this.strand[0][type].dominant) {
-            if(this.strand[1][type].dominant) {
-                return (this.strand[0][type].value + this.strand[1][type].value)/2;
+        if(this.strands[0][type].dominant) {
+            if(this.strands[1][type].dominant) {
+                if(this.strands[0][type].value == this.strands[1][type].value) {
+                    return this.strands[0][type].value;
+                } else {
+                    return (this.strands[0][type].value + this.strands[1][type].value) / 2;
+                }
             } else {
-                this.strand[0][type].value;
+                return this.strands[0][type].value;
             }
         } else {
-            if(this.strand[1][type].dominant) {
-                return this.strand[1][type].value;
+            if(this.strands[1][type].dominant) {
+                return this.strands[1][type].value;
             } else {
-                this.strand[0][type].value;
+                if(this.strands[0][type].value == this.strands[1][type].value) {
+                    return this.strands[0][type].value;
+                } else {
+                    return (this.strands[0][type].value + this.strands[1][type].value) / 2;
+                }
             }
         }
     },
