@@ -103,14 +103,14 @@ function brightenColour(originalColour, brightnessModifier) {
     if(!!originalColour.indexOf) {// it's a string
         originalColour = hexColourStringToRgbObj(originalColour);
     }
-    var newR = limitColourValue(originalColour.r + brightnessModifier),
-        newG = limitColourValue(originalColour.g + brightnessModifier),
-        newB = limitColourValue(originalColour.b + brightnessModifier);
+    var newR = limitNumber(originalColour.r + brightnessModifier, 0, 255),
+        newG = limitNumber(originalColour.g + brightnessModifier, 0, 255),
+        newB = limitNumber(originalColour.b + brightnessModifier, 0, 255);
     return {r:newR, g: newG, b: newB};
 }
 
-function limitColourValue(value) {
-    if(value > 255) value = 255;
-    if(value < 0) value = 0;
+function limitNumber(value, lowerLimit, upperLimit) {
+    if(value > upperLimit) value = upperLimit;
+    if(value < lowerLimit) value = lowerLimit;
     return value;
 }
