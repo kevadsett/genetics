@@ -61,6 +61,7 @@ Chromosome.prototype = {
         this.strands[0][type].value = this.strands[1][type].value = value;
     },
     getValue:function(type) {
+        console.log(type);
         if(this.strands[0][type].dominant) {
             if(this.strands[1][type].dominant) {
                 if(this.strands[0][type].value == this.strands[1][type].value) {
@@ -82,8 +83,38 @@ Chromosome.prototype = {
                 }
             }
         }
+    }
+}
+
+function dna (chromosomes) {
+    this.chromosomes = {}
+    for(var key in chromosomes) {
+        this.chromosomes[key] = chromosomes[key];
+    }
+}
+
+dna.prototype = {
+    generateRandomData: function() {
+        for(var key in this.chromosomes) {
+            this.chromosomes[key].generateRandomData();
+        }
     },
     meiosis: function() {
-        
+        for(var key in this.chromosomes) {
+            console.log(key);
+        }
+    },
+    get: function(key) {
+        console.log("get: " + key);
+        if(this.chromosomes[key]) {
+            return this.chromosomes[key];
+        } else {
+            for(var chromeKey in this.chromosomes) {
+                console.log(this.chromosomes[chromeKey]);
+                if(this.chromosomes[chromeKey].getValue(key) != undefined) {
+                    return this.chromosomes[chromeKey].getValue(key);
+                }
+            }
+        }
     }
 }

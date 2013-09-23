@@ -1,5 +1,5 @@
 function RunnerModel() {
-    this.genes = {
+    this.genes = new dna({
     behaviour: new Chromosome(
         ["speed",
          "pathConfidence", 
@@ -29,7 +29,7 @@ function RunnerModel() {
           "green",
           "blue"
          ])
-    };
+    });
 }
 
 function RunnerView(model, context) {
@@ -45,7 +45,7 @@ RunnerView.prototype = {
         this.context.fillStyle = this.model.tailColours[0];
         this.renderBodySegment(this.model.position, this.model.angle);
         
-        for(var i = 0; i < this.model.tailLength; i++) {
+        for(var i = this.model.tailLength-1; i > 0; i--) {
             this.context.fillStyle = this.model.tailColours[i];
             this.renderBodySegment(this.model.tail[i].position, this.model.tail[i].angle, i);
         }
@@ -94,7 +94,7 @@ function RunnerController(model) {
     this.view = new RunnerView(model, game.canvas.getContext('2d'));
     game.on('update', this.update, this);
 }
-var logFrames = 0;
+
 RunnerController.prototype = {
     advance:function(speed) {
         var speedChange = mapValue(this.model.speedConfidence, 0, 1, randomInt(0, 2), 0);
@@ -105,15 +105,17 @@ RunnerController.prototype = {
         
         
         for(var i = this.model.tailLength-1; i > 0; i--) {
-            this.model.tail[i].position = this.model.tail[i-1].position.copy();
-            this.model.tail[i].angle = this.model.tail[i-1].angle;
+            var segmentSize = this.model.size * mapValue(i, 0, this.model.tailLength, 1, 0.3),
+                previousSegment = this.model.tail[i-1],
+                currentSegment = this.model.tail[i];
+            currentSegment.position = previousSegment.position.copy();
+            currentSegment.angle = previousSegment.angle;
         }
         this.model.position.x += speed * Math.cos(degToRad(this.model.angle));
         this.model.position.y += speed * Math.sin(degToRad(this.model.angle));
         this.model.tail[0].position = this.model.position.copy();
         this.model.tail[0].angle = this.model.angle;
         this.checkForBoundaries();
-        logFrames++;
     },
     
     checkForBoundaries: function() {
@@ -145,12 +147,12 @@ RunnerController.prototype = {
         for(var i = 0; i < game.numberOfDudes; i++) {
             if(game.runners[i] != this) {
                 var currentRunner = game.runners[i].model;
-                if(distance(this.model.position, currentRunner.position) < this.model.genes.behaviour.getValue("senseRadius") * 100) {
+                if(distance(this.model.position, currentRunner.position) < this.model.genes.get("senseRadius") * 100) {
                     detectedObjects.push(game.runners[i].model);
                 }
             }
         }
-        if(distance(this.model.position, game.ball.model.position) < this.model.genes.behaviour.getValue("senseRadius") * 100) {
+        if(distance(this.model.position, game.ball.model.position) < this.model.genes.get("senseRadius") * 100) {
             detectedObjects.push(game.ball.model);
         }
         return detectedObjects;
@@ -182,21 +184,20 @@ RunnerController.prototype = {
     setupAttributes: function() {
         var model = this.model,
             genes = this.model.genes;
-        genes.behaviour.generateRandomData();
-        genes.appearance.generateRandomData();
+        genes.generateRandomData();
         model.position = new Vector(randomInt(0, game.width), randomInt(0, game.height));
-        model.angleConfidence = genes.behaviour.getValue("angleConfidence");
-        model.pathConfidence = genes.behaviour.getValue("pathConfidence");
-        model.speedConfidence = genes.behaviour.getValue("speedConfidence");
-        model.directionalBias = genes.behaviour.getValue("directionalBias");
-        model.speedBias = genes.behaviour.getValue("speedBias");
+        model.angleConfidence = genes.get("angleConfidence");
+        model.pathConfidence = genes.get("pathConfidence");
+        model.speedConfidence = genes.get("speedConfidence");
+        model.directionalBias = genes.get("directionalBias");
+        model.speedBias = genes.get("speedBias");
         model.angle = randomInt(0, 360);
-        var r = parseInt(genes.appearance.getValue("red") * 255),
-            g = parseInt(genes.appearance.getValue("green") * 255),
-            b = parseInt(genes.appearance.getValue("blue") * 255);
+        var r = parseInt(genes.get("red") * 255),
+            g = parseInt(genes.get("green") * 255),
+            b = parseInt(genes.get("blue") * 255);
         model.colour = {r:r, g:g, b:b};
-        model.size = mapValue(genes.appearance.getValue("size"), 0, 1, 10, 20);
-        model.originalSpeed = model.speed = (model.size/3) * genes.behaviour.getValue("speed");
+        model.size = mapValue(genes.get("size"), 0, 1, 10, 20);
+        model.originalSpeed = model.speed = (model.size/3) * genes.get("speed");
         this.setupTail();
         model.framesInExistance = 0;
         model.totalPreviousPositions = model.tailLength * model.tailSpacing;
@@ -208,7 +209,7 @@ RunnerController.prototype = {
     setupTail: function() {
         var model = this.model,
             genes = this.model.genes;
-        switch(Math.round(genes.appearance.getValue("tailLength") * 2)) {
+        switch(Math.round(genes.get("tailLength") * 2)) {
             case 0:
                 model.tailLength = randomInt(10, 20);
                 break;
@@ -225,7 +226,7 @@ RunnerController.prototype = {
         model.tailColours = new Array(model.tailLength);
         var originalColour = model.colour;
         for(var i = 0; i < model.tailLength; i++) {
-            var varyColourBy = mapValue(genes.appearance.getValue("brightnessVariation"), 0, 1, 0, (Math.random() * 2) - 1);
+            var varyColourBy = mapValue(genes.get("brightnessVariation"), 0, 1, 0, (Math.random() * 2) - 1);
             var brightnessModifier = parseInt(mapValue(varyColourBy, -1, 1, -100, 100));
             var newTailColour = brightenColour(originalColour, brightnessModifier);
             model.tailColours[i] = rgbObjToHexColourString(newTailColour);
@@ -237,51 +238,48 @@ RunnerController.prototype = {
     },
     
     reactToObjects: function() {
-        console.log("current speed: " + toDecimalPlaces(this.model.speed, 2));
         var distanceToNearestObject = this.getDistanceToNearestObject();
         if(distanceToNearestObject > -1) {
-            var normalisedDistance = mapValue(distanceToNearestObject, 0, this.model.genes.behaviour.getValue("senseRadius") * 100, 0, 1),
-                appearance = this.model.genes.appearance,
-                behaviour = this.model.genes.behaviour;
+            var normalisedDistance = mapValue(distanceToNearestObject, 0, this.model.genes.get("senseRadius") * 100, 0, 1);
             
             //speed
             this.model.speed = this.affectTraitByDistanceToObject(this.model.originalSpeed, 
                                                                   normalisedDistance, 
-                                                                  behaviour.getValue("speedObjectEffect"), 
-                                                                  behaviour.getValue("objectAffectsSpeed"));
+                                                                  this.model.genes.get("speedObjectEffect"), 
+                                                                  this.model.genes.get("objectAffectsSpeed"));
             
             //direction
-            this.model.directionalBias = this.affectTraitByDistanceToObject(this.model.genes.behaviour.getValue("directionalBias"),
+            this.model.directionalBias = this.affectTraitByDistanceToObject(this.model.genes.get("directionalBias"),
                                                                             normalisedDistance, 
-                                                                            behaviour.getValue("directionalBiasObjectEffect"),
-                                                                            behaviour.getValue("objectAffectsDirectionalBias"));
+                                                                            this.model.genes.get("directionalBiasObjectEffect"),
+                                                                            this.model.genes.get("objectAffectsDirectionalBias"));
             //confidence
-            this.model.speedConfidence = this.affectTraitByDistanceToObject(this.model.genes.behaviour.getValue("speedConfidence"),
+            this.model.speedConfidence = this.affectTraitByDistanceToObject(this.model.genes.get("speedConfidence"),
                                                                             normalisedDistance, 
-                                                                            behaviour.getValue("speedConfidenceObjectEffect"), 
-                                                                            behaviour.getValue("objectAffectsSpeedConfidence"));
+                                                                            this.model.genes.get("speedConfidenceObjectEffect"), 
+                                                                            this.model.genes.get("objectAffectsSpeedConfidence"));
             
-            this.model.angleConfidence = this.affectTraitByDistanceToObject(this.model.genes.behaviour.getValue("angleConfidence"),
+            this.model.angleConfidence = this.affectTraitByDistanceToObject(this.model.genes.get("angleConfidence"),
                                                                             normalisedDistance, 
-                                                                            behaviour.getValue("angleConfidenceObjectEffect"), 
-                                                                            behaviour.getValue("objectAffectsAngleConfidence"));
+                                                                            this.model.genes.get("angleConfidenceObjectEffect"), 
+                                                                            this.model.genes.get("objectAffectsAngleConfidence"));
             
-            this.model.pathConfidence = this.affectTraitByDistanceToObject(this.model.genes.behaviour.getValue("pathConfidence"),
+            this.model.pathConfidence = this.affectTraitByDistanceToObject(this.model.genes.get("pathConfidence"),
                                                                            normalisedDistance, 
-                                                                           behaviour.getValue("pathConfidenceObjectEffect"), 
-                                                                           behaviour.getValue("objectAffectsPathConfidence"));
+                                                                           this.model.genes.get("pathConfidenceObjectEffect"), 
+                                                                           this.model.genes.get("objectAffectsPathConfidence"));
             
         } else {
             this.model.speed = this.model.originalSpeed;
-            this.model.directionalBias = this.model.genes.behaviour.getValue("directionalBias");
-            this.model.speedConfidence = this.model.genes.behaviour.getValue("speedConfidence");
-            this.model.angleConfidence = this.model.genes.behaviour.getValue("angleConfidence");
-            this.model.pathConfidence = this.model.genes.behaviour.getValue("pathConfidence");
+            this.model.directionalBias = this.model.genes.get("directionalBias");
+            this.model.speedConfidence = this.model.genes.get("speedConfidence");
+            this.model.angleConfidence = this.model.genes.get("angleConfidence");
+            this.model.pathConfidence = this.model.genes.get("pathConfidence");
         }
     },
     
     affectTraitByDistanceToObject: function(originalTraitValue, normalisedDistance, maximumObjectAffectedTrait, amountObjectAffectsTrait) {
-        var objectImpact = this.model.genes.behaviour.getValue("caresAboutObjects") * amountObjectAffectsTrait * (1 - normalisedDistance);
+        var objectImpact = this.model.genes.get("caresAboutObjects") * amountObjectAffectsTrait * (1 - normalisedDistance);
         var newValue = mapValue(objectImpact, 0, 1, originalTraitValue, maximumObjectAffectedTrait);
         return newValue;
     },

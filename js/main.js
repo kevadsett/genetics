@@ -12,7 +12,7 @@ function Game() {
         Events(this);
         $('body').append('<div id="canvasContainer"><canvas id="gameCanvas"></canvas></div>');
         this.lastCalledTime = new Date().getTime();
-        this.numberOfDudes = 1;
+        this.numberOfDudes = 2;
         this.frame = 0;
         this.slowFrameRate = 1;
         this.fps = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
