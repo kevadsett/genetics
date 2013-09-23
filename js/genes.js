@@ -57,6 +57,9 @@ Chromosome.prototype = {
             }
         }
     },
+    setValue:function(type, value) {
+        this.strands[0][type].value = this.strands[1][type].value = value;
+    },
     getValue:function(type) {
         if(this.strands[0][type].dominant) {
             if(this.strands[1][type].dominant) {

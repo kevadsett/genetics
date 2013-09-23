@@ -1,7 +1,8 @@
 function RunnerModel() {
     this.genes = {
     behaviour: new Chromosome(
-        ["pathConfidence", 
+        ["speed",
+         "pathConfidence", 
          "angleConfidence", 
          "speedConfidence", 
          "senseRadius",
@@ -70,7 +71,7 @@ RunnerView.prototype = {
         
         this.context.rotate(degToRad(angle));
         
-        this.context.strokeWidth = this.sizeMultiple;
+        this.context.strokeWidth = this.model.size / 10;
         this.context.strokeStyle = this.model.selected ? rgbObjToHexColourString({r:255, g:0, b:255}) : "#000000";
         this.context.beginPath();
         var size = this.model.size;
@@ -195,8 +196,7 @@ RunnerController.prototype = {
             b = parseInt(genes.appearance.getValue("blue") * 255);
         model.colour = {r:r, g:g, b:b};
         model.size = mapValue(genes.appearance.getValue("size"), 0, 1, 10, 20);
-        model.sizeMultiple = 2 * model.size / 10;
-        model.movementSpeed = model.speed = model.sizeMultiple;
+        model.originalSpeed = model.speed = (model.size/3) * genes.behaviour.getValue("speed");
         this.setupTail();
         model.framesInExistance = 0;
         model.totalPreviousPositions = model.tailLength * model.tailSpacing;
@@ -245,33 +245,46 @@ RunnerController.prototype = {
                 behaviour = this.model.genes.behaviour;
             
             //speed
-            this.model.speed = this.model.movementSpeed * this.getDistanceAffectedTrait(normalisedDistance, 
-                                                             behaviour.getValue("speedObjectEffect") * 2,
-                                                             behaviour.getValue("objectAffectsSpeed"));
+            this.model.speed = this.affectTraitByDistanceToObject(this.model.originalSpeed, 
+                                                                  normalisedDistance, 
+                                                                  behaviour.getValue("speedObjectEffect"), 
+                                                                  behaviour.getValue("objectAffectsSpeed"));
+            
             //direction
-            /*this.model.directionalBias = this.getDistanceAffectedTrait(normalisedDistance, 
-                                                                       behaviour.getValue("directionalBiasObjectEffect"),
-                                                                       behaviour.getValue("objectAffectsDirectionalBias"));
+            this.model.directionalBias = this.affectTraitByDistanceToObject(this.model.genes.behaviour.getValue("directionalBias"),
+                                                                            normalisedDistance, 
+                                                                            behaviour.getValue("directionalBiasObjectEffect"),
+                                                                            behaviour.getValue("objectAffectsDirectionalBias"));
             //confidence
-            this.model.speedConfidence = this.getDistanceAffectedTrait(normalisedDistance, 
-                                                                       behaviour.getValue("speedConfidenceObjectEffect"), 
-                                                                       behaviour.getValue("objectAffectsSpeedConfidence"));
+            this.model.speedConfidence = this.affectTraitByDistanceToObject(this.model.genes.behaviour.getValue("speedConfidence"),
+                                                                            normalisedDistance, 
+                                                                            behaviour.getValue("speedConfidenceObjectEffect"), 
+                                                                            behaviour.getValue("objectAffectsSpeedConfidence"));
             
-            this.model.angleConfidence = this.getDistanceAffectedTrait(normalisedDistance, 
-                                                                       behaviour.getValue("angleConfidenceObjectEffect"), 
-                                                                       behaviour.getValue("objectAffectsAngleConfidence"));
+            this.model.angleConfidence = this.affectTraitByDistanceToObject(this.model.genes.behaviour.getValue("angleConfidence"),
+                                                                            normalisedDistance, 
+                                                                            behaviour.getValue("angleConfidenceObjectEffect"), 
+                                                                            behaviour.getValue("objectAffectsAngleConfidence"));
             
-            this.model.pathConfidence = this.getDistanceAffectedTrait(normalisedDistance, 
-                                                                      behaviour.getValue("pathConfidenceObjectEffect"), 
-                                                                      behaviour.getValue("objectAffectsPathConfidence"));*/
+            this.model.pathConfidence = this.affectTraitByDistanceToObject(this.model.genes.behaviour.getValue("pathConfidence"),
+                                                                           normalisedDistance, 
+                                                                           behaviour.getValue("pathConfidenceObjectEffect"), 
+                                                                           behaviour.getValue("objectAffectsPathConfidence"));
             
         } else {
-            this.model.speed = this.model.movementSpeed;
+            this.model.speed = this.model.originalSpeed;
             this.model.directionalBias = this.model.genes.behaviour.getValue("directionalBias");
-            this.model.speedConfidence = 1; //this.model.genes.behaviour.getValue("speedConfidence");
-            this.model.angleConfidence = 1; //this.model.genes.behaviour.getValue("angleConfidence");
-            this.model.pathConfidence = 1; //this.model.genes.behaviour.getValue("pathConfidence");
+            this.model.speedConfidence = this.model.genes.behaviour.getValue("speedConfidence");
+            this.model.angleConfidence = this.model.genes.behaviour.getValue("angleConfidence");
+            this.model.pathConfidence = this.model.genes.behaviour.getValue("pathConfidence");
         }
+    },
+    
+    affectTraitByDistanceToObject: function(originalTraitValue, normalisedDistance, maximumObjectAffectedTrait, amountObjectAffectsTrait) {
+        var objectImpact = this.model.genes.behaviour.getValue("caresAboutObjects") * amountObjectAffectsTrait * (1 - normalisedDistance);
+        console.log("objectImpact: " + objectImpact);
+        var newValue = mapValue(objectImpact, 0, 1, originalTraitValue, maximumObjectAffectedTrait);
+        return newValue;
     },
     
     getDistanceAffectedTrait: function(normalisedDistance, maximumNewTrait, objectAffectsTrait) {
@@ -281,9 +294,8 @@ RunnerController.prototype = {
         console.log("how much an object affects this trait: " + toDecimalPlaces(objectAffectsTrait, 2));
         var objectEffect = this.model.genes.behaviour.getValue("caresAboutObjects") * objectAffectsTrait * (1 - normalisedDistance);
         console.log("impact of object: " + toDecimalPlaces(objectEffect, 2));
-        var newValue = 1 - mapValue(objectEffect, 0, 1, 0, maximumNewTrait);
+        var newValue = mapValue(objectEffect, 0, 1, 0, 1 - maximumNewTrait);
         console.log("newValue: " + toDecimalPlaces(newValue, 2));
-        console.log("newValue: " + newValue);
         return newValue;
     },
     

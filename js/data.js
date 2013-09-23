@@ -1,4 +1,9 @@
 var allelDominance = {
+    speed: {
+        type: "loHi",
+        low: true,
+        high: false,
+    },
     pathConfidence: {
         type: "loMedHi",
         low: true,
