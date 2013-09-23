@@ -67,6 +67,18 @@ function getAgentAt(x, y) {
     return agentsAtCoords;
 }
 
+function toDecimalPlaces(number, numberOfPlaces) {
+    var multiplier = 10;
+    if(numberOfPlaces > 0) {
+        for(var i = 1; i < numberOfPlaces; i++) {
+            multiplier *= 10;
+        }
+        return Math.round((multiplier * number))/multiplier;
+    } else {
+        return Math.round(number);
+    }
+}
+
 function cloneObject(objectToClone) {
     var key, i, clonedArray = [];
     var clone = {};

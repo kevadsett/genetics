@@ -34,10 +34,31 @@ var allelDominance = {
         medium: true,
         high: false
     },
-    objectAffectsDirection: {
+    speedObjectEffect: {
+        type: "loHi",
+        low: true,
+        high: false
+    },
+    objectAffectsDirectionalBias: {
         type: "loMedHi",
         low: false,
         medium: true,
+        high: false
+    },
+    directionalBiasObjectEffect: {
+        type: "loHi",
+        low: true,
+        high: false
+    },
+    objectAffectsSpeedConfidence: {
+        type: "loMedHi",
+        low: false,
+        medium: true,
+        high: false
+    },
+    speedConfidenceObjectEffect: {
+        type: "loHi",
+        low: true,
         high: false
     },
     objectAffectsAngleConfidence: {
@@ -46,11 +67,21 @@ var allelDominance = {
         medium: true,
         high: false
     },
+    angleConfidenceObjectEffect: {
+        type: "loHi",
+        low: false,
+        high: true
+    },
     objectAffectsPathConfidence: {
         type: "loMedHi",
         low: false,
         medium: true,
         high: false
+    },
+    pathConfidenceObjectEffect: {
+        type: "loHi",
+        low: false,
+        high: true
     },
     tailLength: {
         type: "loMedHi",

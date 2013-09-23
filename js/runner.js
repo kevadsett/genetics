@@ -7,9 +7,15 @@ function RunnerModel() {
          "senseRadius",
          "caresAboutObjects",
          "objectAffectsSpeed",
-         "objectAffectsDirection",
+         "speedObjectEffect",
+         "objectAffectsDirectionalBias",
+         "directionalBiasObjectEffect",
+         "objectAffectsSpeedConfidence",
+         "speedConfidenceObjectEffect",
          "objectAffectsAngleConfidence",
+         "angleConfidenceObjectEffect",
          "objectAffectsPathConfidence",
+         "pathConfidenceObjectEffect",
          "directionalBias",
          "speedBias"
         ]),
@@ -124,7 +130,7 @@ RunnerController.prototype = {
     },
     
     changeDirection: function() {
-        if(Math.random() > this.model.genes.behaviour.getValue("pathConfidence")) {
+        if(Math.random() > this.model.pathConfidence) {
             var angleChange = mapValue(this.model.angleConfidence, 0, 1, randomInt(0,30), 0);
             if(Math.random() < this.model.directionalBias) {
                 angleChange = - angleChange;
@@ -183,7 +189,6 @@ RunnerController.prototype = {
         model.speedConfidence = genes.behaviour.getValue("speedConfidence");
         model.directionalBias = genes.behaviour.getValue("directionalBias");
         model.speedBias = genes.behaviour.getValue("speedBias");
-        console.log("angleConfidence: " + model.angleConfidence + ", pathConfidence: " + model.pathConfidence + ", directionalBias: " + model.directionalBias);
         model.angle = randomInt(0, 360);
         var r = parseInt(genes.appearance.getValue("red") * 255),
             g = parseInt(genes.appearance.getValue("green") * 255),
@@ -191,7 +196,7 @@ RunnerController.prototype = {
         model.colour = {r:r, g:g, b:b};
         model.size = mapValue(genes.appearance.getValue("size"), 0, 1, 10, 20);
         model.sizeMultiple = 2 * model.size / 10;
-        model.movementSpeed = model.speed = model.sizeMultiple * ((genes.behaviour.getValue("speedConfidence") / 2) + 0.5);
+        model.movementSpeed = model.speed = model.sizeMultiple;
         this.setupTail();
         model.framesInExistance = 0;
         model.totalPreviousPositions = model.tailLength * model.tailSpacing;
@@ -232,27 +237,54 @@ RunnerController.prototype = {
     },
     
     reactToObjects: function() {
+        console.log("current speed: " + toDecimalPlaces(this.model.speed, 2));
         var distanceToNearestObject = this.getDistanceToNearestObject();
         if(distanceToNearestObject > -1) {
             var normalisedDistance = mapValue(distanceToNearestObject, 0, this.model.genes.behaviour.getValue("senseRadius") * 100, 0, 1),
-                objectEffect = this.model.genes.behaviour.getValue("caresAboutObjects") * normalisedDistance;
+                appearance = this.model.genes.appearance,
+                behaviour = this.model.genes.behaviour;
             
             //speed
-            var newMaxSpeed = this.model.movementSpeed * this.model.genes.behaviour.getValue("objectAffectsSpeed") * 2;
-            this.model.speed = mapValue(normalisedDistance, 0, 1, newMaxSpeed, this.model.movementSpeed);
-            
+            this.model.speed = this.model.movementSpeed * this.getDistanceAffectedTrait(normalisedDistance, 
+                                                             behaviour.getValue("speedObjectEffect") * 2,
+                                                             behaviour.getValue("objectAffectsSpeed"));
             //direction
-            var changeDirection = this.model.genes.behaviour.getValue("objectAffectsDirection") * objectEffect,
-                newDirectionalBias = limitNumber(this.model.directionalBias + changeDirection, 0, 1);
-            this.model.directionalBias = mapValue(normalisedDistance, 0, 1, newDirectionalBias, this.model.genes.behaviour.getValue("directionalBias"));
-            
+            /*this.model.directionalBias = this.getDistanceAffectedTrait(normalisedDistance, 
+                                                                       behaviour.getValue("directionalBiasObjectEffect"),
+                                                                       behaviour.getValue("objectAffectsDirectionalBias"));
             //confidence
-//            this.model.angleConfidence
+            this.model.speedConfidence = this.getDistanceAffectedTrait(normalisedDistance, 
+                                                                       behaviour.getValue("speedConfidenceObjectEffect"), 
+                                                                       behaviour.getValue("objectAffectsSpeedConfidence"));
+            
+            this.model.angleConfidence = this.getDistanceAffectedTrait(normalisedDistance, 
+                                                                       behaviour.getValue("angleConfidenceObjectEffect"), 
+                                                                       behaviour.getValue("objectAffectsAngleConfidence"));
+            
+            this.model.pathConfidence = this.getDistanceAffectedTrait(normalisedDistance, 
+                                                                      behaviour.getValue("pathConfidenceObjectEffect"), 
+                                                                      behaviour.getValue("objectAffectsPathConfidence"));*/
             
         } else {
             this.model.speed = this.model.movementSpeed;
             this.model.directionalBias = this.model.genes.behaviour.getValue("directionalBias");
+            this.model.speedConfidence = 1; //this.model.genes.behaviour.getValue("speedConfidence");
+            this.model.angleConfidence = 1; //this.model.genes.behaviour.getValue("angleConfidence");
+            this.model.pathConfidence = 1; //this.model.genes.behaviour.getValue("pathConfidence");
         }
+    },
+    
+    getDistanceAffectedTrait: function(normalisedDistance, maximumNewTrait, objectAffectsTrait) {
+        console.log("distance to object: " + toDecimalPlaces(normalisedDistance, 1));
+        console.log("how much the runner cares about objects: " + toDecimalPlaces(this.model.genes.behaviour.getValue("caresAboutObjects"), 2));
+        console.log("maximum trait effect: " + toDecimalPlaces(maximumNewTrait, 2));
+        console.log("how much an object affects this trait: " + toDecimalPlaces(objectAffectsTrait, 2));
+        var objectEffect = this.model.genes.behaviour.getValue("caresAboutObjects") * objectAffectsTrait * (1 - normalisedDistance);
+        console.log("impact of object: " + toDecimalPlaces(objectEffect, 2));
+        var newValue = 1 - mapValue(objectEffect, 0, 1, 0, maximumNewTrait);
+        console.log("newValue: " + toDecimalPlaces(newValue, 2));
+        console.log("newValue: " + newValue);
+        return newValue;
     },
     
     update:function() {
