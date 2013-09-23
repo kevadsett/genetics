@@ -282,20 +282,7 @@ RunnerController.prototype = {
     
     affectTraitByDistanceToObject: function(originalTraitValue, normalisedDistance, maximumObjectAffectedTrait, amountObjectAffectsTrait) {
         var objectImpact = this.model.genes.behaviour.getValue("caresAboutObjects") * amountObjectAffectsTrait * (1 - normalisedDistance);
-        console.log("objectImpact: " + objectImpact);
         var newValue = mapValue(objectImpact, 0, 1, originalTraitValue, maximumObjectAffectedTrait);
-        return newValue;
-    },
-    
-    getDistanceAffectedTrait: function(normalisedDistance, maximumNewTrait, objectAffectsTrait) {
-        console.log("distance to object: " + toDecimalPlaces(normalisedDistance, 1));
-        console.log("how much the runner cares about objects: " + toDecimalPlaces(this.model.genes.behaviour.getValue("caresAboutObjects"), 2));
-        console.log("maximum trait effect: " + toDecimalPlaces(maximumNewTrait, 2));
-        console.log("how much an object affects this trait: " + toDecimalPlaces(objectAffectsTrait, 2));
-        var objectEffect = this.model.genes.behaviour.getValue("caresAboutObjects") * objectAffectsTrait * (1 - normalisedDistance);
-        console.log("impact of object: " + toDecimalPlaces(objectEffect, 2));
-        var newValue = mapValue(objectEffect, 0, 1, 0, 1 - maximumNewTrait);
-        console.log("newValue: " + toDecimalPlaces(newValue, 2));
         return newValue;
     },
     
