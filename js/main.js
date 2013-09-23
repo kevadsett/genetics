@@ -11,9 +11,11 @@ function Game() {
     $(document).ready($.proxy(function() {
         Events(this);
         $('body').append('<div id="canvasContainer"><canvas id="gameCanvas"></canvas></div>');
-        this.numberOfDudes = 20;
+        this.lastCalledTime = new Date().getTime();
+        this.numberOfDudes = 1;
         this.frame = 0;
         this.slowFrameRate = 1;
+        this.fps = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
         this.setup();
         this.loop();
     }, this));
@@ -22,15 +24,23 @@ function Game() {
 Game.prototype = {
     loop: function() {
         requestAnimFrame($.proxy(this.loop, this));
-        if(this.frame == this.slowFrameRate) {
+        if((this.frame % this.slowFrameRate) == 0) {
             this.update();
             this.render();
-            this.frame = 0;
         }
         this.frame ++;
+        var deltaTime = (new Date().getTime() - this.lastCalledTime) / 1000;
+        this.lastCalledTime = new Date().getTime();
+        this.fps[this.frame & this.fps.length] = Math.round(1/deltaTime);
+        this.averageFPS = 0;
+        for(var i = 0; i < this.fps.length; i++) {
+            this.averageFPS += this.fps[i];
+        }
+        this.averageFPS /= this.fps.length;
     },
     render: function() {
         this.context.clearRect(0, 0, this.width, this.height);
+        document.getElementById("fpsCounter").innerHTML = "<p>" + Math.round(this.averageFPS) + "</p>"
         this.emit('render');
     },
     resizeCanvas: function() {
@@ -51,7 +61,7 @@ Game.prototype = {
         this.canvas = document.getElementById('gameCanvas');
         this.context = this.canvas.getContext('2d');
         this.resizeCanvas();
-        $(window).on('resize', this.resizeCanvas, this);
+//        $(window).on('resize', this.resizeCanvas, this);
         this.runners = [];
         for(var i = 0; i < this.numberOfDudes; i++) {
             this.runners.push(new RunnerController(new RunnerModel()));

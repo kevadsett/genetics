@@ -63,6 +63,12 @@ var allelDominance = {
         low: false,
         medium: true,
         high: false
+    }, 
+    speedBias: {
+        type: "loMedHi",
+        low: false,
+        medium: true,
+        high: false
     },
     size: {
         type: "loMedHi",

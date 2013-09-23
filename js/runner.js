@@ -10,7 +10,8 @@ function RunnerModel() {
          "objectAffectsDirection",
          "objectAffectsAngleConfidence",
          "objectAffectsPathConfidence",
-         "directionalBias"
+         "directionalBias",
+         "speedBias"
         ]),
      appearance: new Chromosome(
          ["tailLength", 
@@ -86,12 +87,26 @@ function RunnerController(model) {
     this.view = new RunnerView(model, game.canvas.getContext('2d'));
     game.on('update', this.update, this);
 }
-
+var logFrames = 0;
 RunnerController.prototype = {
     advance:function(speed) {
+        var speedChange = mapValue(this.model.speedConfidence, 0, 1, randomInt(0, 2), 0);
+        if (Math.random() > this.model.speedBias) {
+            speedChange = -speedChange;
+        }
+        speed += speedChange;
+        
+        
+        for(var i = this.model.tailLength-1; i > 0; i--) {
+            this.model.tail[i].position = this.model.tail[i-1].position.copy();
+            this.model.tail[i].angle = this.model.tail[i-1].angle;
+        }
         this.model.position.x += speed * Math.cos(degToRad(this.model.angle));
         this.model.position.y += speed * Math.sin(degToRad(this.model.angle));
+        this.model.tail[0].position = this.model.position.copy();
+        this.model.tail[0].angle = this.model.angle;
         this.checkForBoundaries();
+        logFrames++;
     },
     
     checkForBoundaries: function() {
@@ -110,7 +125,7 @@ RunnerController.prototype = {
     
     changeDirection: function() {
         if(Math.random() > this.model.genes.behaviour.getValue("pathConfidence")) {
-            var angleChange = mapValue(this.model.genes.behaviour.getValue("angleConfidence"), 0, 1, randomInt(0,30), 0);
+            var angleChange = mapValue(this.model.angleConfidence, 0, 1, randomInt(0,30), 0);
             if(Math.random() < this.model.directionalBias) {
                 angleChange = - angleChange;
             }
@@ -164,7 +179,11 @@ RunnerController.prototype = {
         genes.appearance.generateRandomData();
         model.position = new Vector(randomInt(0, game.width), randomInt(0, game.height));
         model.angleConfidence = genes.behaviour.getValue("angleConfidence");
-        model.directionalBias = genes.behaviour.getValue("angleConfidence");
+        model.pathConfidence = genes.behaviour.getValue("pathConfidence");
+        model.speedConfidence = genes.behaviour.getValue("speedConfidence");
+        model.directionalBias = genes.behaviour.getValue("directionalBias");
+        model.speedBias = genes.behaviour.getValue("speedBias");
+        console.log("angleConfidence: " + model.angleConfidence + ", pathConfidence: " + model.pathConfidence + ", directionalBias: " + model.directionalBias);
         model.angle = randomInt(0, 360);
         var r = parseInt(genes.appearance.getValue("red") * 255),
             g = parseInt(genes.appearance.getValue("green") * 255),
@@ -178,7 +197,7 @@ RunnerController.prototype = {
         model.totalPreviousPositions = model.tailLength * model.tailSpacing;
         model.previousPositions = [];
         
-        console.log(model.genes);
+//        console.log(model.genes);
     },
     
     setupTail: function() {
@@ -200,7 +219,6 @@ RunnerController.prototype = {
         model.tail = new Array(model.tailLength);
         model.tailColours = new Array(model.tailLength);
         var originalColour = model.colour;
-        console.log(originalColour);
         for(var i = 0; i < model.tailLength; i++) {
             var varyColourBy = mapValue(genes.appearance.getValue("brightnessVariation"), 0, 1, 0, (Math.random() * 2) - 1);
             var brightnessModifier = parseInt(mapValue(varyColourBy, -1, 1, -100, 100));
@@ -216,16 +234,21 @@ RunnerController.prototype = {
     reactToObjects: function() {
         var distanceToNearestObject = this.getDistanceToNearestObject();
         if(distanceToNearestObject > -1) {
+            var normalisedDistance = mapValue(distanceToNearestObject, 0, this.model.genes.behaviour.getValue("senseRadius") * 100, 0, 1),
+                objectEffect = this.model.genes.behaviour.getValue("caresAboutObjects") * normalisedDistance;
+            
             //speed
             var newMaxSpeed = this.model.movementSpeed * this.model.genes.behaviour.getValue("objectAffectsSpeed") * 2;
-            this.model.speed = mapValue(distanceToNearestObject, 0, this.model.genes.behaviour.getValue("senseRadius") * 100, newMaxSpeed, this.model.movementSpeed);
+            this.model.speed = mapValue(normalisedDistance, 0, 1, newMaxSpeed, this.model.movementSpeed);
             
             //direction
-            var normalisedDistance = mapValue(distanceToNearestObject, 0, this.model.genes.behaviour.getValue("senseRadius") * 100, 0, 1),
-                objectEffect = this.model.genes.behaviour.getValue("caresAboutObjects") * normalisedDistance,
-                changeDirection = this.model.genes.behaviour.getValue("objectAffectsDirection") * objectEffect,
+            var changeDirection = this.model.genes.behaviour.getValue("objectAffectsDirection") * objectEffect,
                 newDirectionalBias = limitNumber(this.model.directionalBias + changeDirection, 0, 1);
             this.model.directionalBias = mapValue(normalisedDistance, 0, 1, newDirectionalBias, this.model.genes.behaviour.getValue("directionalBias"));
+            
+            //confidence
+//            this.model.angleConfidence
+            
         } else {
             this.model.speed = this.model.movementSpeed;
             this.model.directionalBias = this.model.genes.behaviour.getValue("directionalBias");
@@ -233,31 +256,10 @@ RunnerController.prototype = {
     },
     
     update:function() {
-        this.storePreviousPositions();
         this.reactToObjects();
-        this.updateTailSegments();
         this.changeDirection();
         this.advance(this.model.speed);
         this.model.framesInExistance++;
-    },
-    
-    updateTailSegments: function() {
-        for (var i = 0; i < this.model.tailLength; i++) {
-            var currentSegment = this.model.tail[i],
-                spacing = this.model.tailSpacing,
-                previousPositionIndex = i * spacing;
-            if(previousPositionIndex < this.model.previousPositions.length) {
-                currentSegment.position = this.model.previousPositions[previousPositionIndex].position;
-                currentSegment.angle = this.model.previousPositions[previousPositionIndex].angle;
-            }
-        }
-    },
-    
-    storePreviousPositions:function(){
-        var prevPos = this.model.previousPositions,
-            frames = this.model.framesInExistance,
-            numPos = this.model.totalPreviousPositions;
-        this.model.previousPositions.unshift({position: this.model.position.copy(), angle: this.model.angle});
-        if(this.model.previousPositions.length > this.model.totalPreviousPositions) this.model.previousPositions.pop();
     }
+    
 }
