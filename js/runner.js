@@ -43,33 +43,32 @@ RunnerView.prototype = {
         this.context.lineWidth = 2;
         
         this.context.fillStyle = this.model.tailColours[0];
-        this.renderBodySegment(this.model.position, this.model.angle);
         
-        for(var i = this.model.tailLength-1; i > 0; i--) {
+//        for(var i = this.model.tailLength-1; i >= 0; i--) {
+        for(var i = 0; i < this.model.tailLength; i++) {
             this.context.fillStyle = this.model.tailColours[i];
-            this.renderBodySegment(this.model.tail[i].position, this.model.tail[i].angle, i);
+            this.renderBodySegment(this.model.tail[i]);
         }
         
-        this.renderEyes(this.model.position, this.model.angle);
+        this.renderEyes(this.model.tail[0]);
     },
     
-    renderBodySegment: function(position, angle, index) {
-        if(!position) return;
+    renderBodySegment: function(segment) {
+        if(!segment.position) return;
         this.context.save();
-        this.context.translate(position.x, position.y);
-        
-        this.context.rotate(degToRad(angle));
-        var size = this.model.size * mapValue(index, 0, this.model.tailLength, 1, 0.3);
+        this.context.translate(segment.position.x, segment.position.y);
+        this.context.rotate(degToRad(segment.velocity.toAngle()));
+        var size = segment.size;
         this.context.fillRect(-size/2, -size/2, size, size);
         this.context.restore();
     },
     
-    renderEyes: function(position, angle) {
+    renderEyes: function(segment) {
         this.context.save();
         
-        this.context.translate(position.x, position.y);
+        this.context.translate(segment.position.x, segment.position.y);
         
-        this.context.rotate(degToRad(angle));
+        this.context.rotate(degToRad(segment.velocity.toAngle()));
         
         this.context.strokeWidth = this.model.size / 10;
         this.context.strokeStyle = this.model.selected ? rgbObjToHexColourString({r:255, g:0, b:255}) : "#000000";
@@ -96,39 +95,65 @@ function RunnerController(model) {
 }
 
 RunnerController.prototype = {
-    advance:function(speed) {
+    /*advance:function(speed) {
         var speedChange = mapValue(this.model.speedConfidence, 0, 1, randomInt(0, 2), 0);
         if (Math.random() > this.model.speedBias) {
             speedChange = -speedChange;
         }
         speed += speedChange;
+        speed = 1;
         
+        this.model.position = this.getNextPosition(this.model.position, speed, this.model.angle);
         
-        for(var i = this.model.tailLength-1; i > 0; i--) {
-            var segmentSize = this.model.size * mapValue(i, 0, this.model.tailLength, 1, 0.3),
-                previousSegment = this.model.tail[i-1],
-                currentSegment = this.model.tail[i];
-            currentSegment.position = previousSegment.position.copy();
-            currentSegment.angle = previousSegment.angle;
+//        for(var i = this.model.tailLength -1; i >= 0 ; i--) {
+        for(var i = 0; i < this.model.tailLength; i++) {
+            this.advanceSegment(this.model.tail[i], speed);
         }
-        this.model.position.x += speed * Math.cos(degToRad(this.model.angle));
-        this.model.position.y += speed * Math.sin(degToRad(this.model.angle));
-        this.model.tail[0].position = this.model.position.copy();
-        this.model.tail[0].angle = this.model.angle;
-        this.checkForBoundaries();
+        if(!this.model.prevPosition.equalTo(this.model.position)) {
+            this.model.prevPosition = this.model.position.copy();
+        }
+        if(this.model.prevAngle != this.model.angle) {
+            this.model.prevAngle = this.model.angle;
+        }
+    },*/
+    
+    advance: function(speed) {
+        var speedChange = mapValue(this.model.speedConfidence, 0, 1, randomInt(0, 2), 0);
+        if (Math.random() > this.model.speedBias) {
+            speedChange = -speedChange;
+        }
+        speed += speedChange;
+        this.model.position = this.model.position.add(this.model.velocity);
+        for(var i = 0; i < this.model.tailLength; i++) {
+            this.advanceSegment(this.model.tail[i]);
+        }
     },
     
-    checkForBoundaries: function() {
-        var size = this.model.size;
-        if(this.model.position.x < -size) {
-            this.model.position.x = game.width + size;
-        } else if (this.model.position.x > game.width + size) {
-            this.model.position.x = -size;
+    advanceSegment: function(segment) {
+        var parent = this.model.tail[segment.index - 1] || this.model;
+        segment.velocity = parent.velocity.copy();
+        segment.position = segment.position.add(segment.velocity);
+    },
+    
+    /*advanceSegment: function(segment, speed) {
+        var parent = this.model.tail[segment.index - 1] || this.model;
+        var moveAmount = parent.size == segment.size ? 0 : -(speed + (parent.size + segment.size)/2);
+        segment.position = this.getNextPosition(parent.position, moveAmount , parent.angle)
+        segment.angle = getAngle(segment.position, parent.prevPosition)
+//        segment.prevPosition = segment.position.copy();
+    },*/
+    
+    checkForBoundaries: function(segment) {
+        var size = segment.size;
+        if(segment.position.x < -size) {
+            segment.position.x = game.width + size;
+        } else if (segment.position.x > game.width + size) {
+            segment.position.x = -size;
         }
-        if(this.model.position.y < -size) {
-            this.model.position.y = game.height + size;
-        } else if (this.model.position.y > game.height + size) {
-            this.model.position.y = -size;
+        if(segment.position.y < -size) {
+            segment.position.y = game.height + size;
+        } else if (segment.position.y > game.height + size) {
+            segment.position.y = -size;
         }
     },
     
@@ -138,7 +163,7 @@ RunnerController.prototype = {
             if(Math.random() < this.model.directionalBias) {
                 angleChange = - angleChange;
             }
-            this.model.angle = (360 + (this.model.angle + angleChange)) % 360;
+            this.model.velocity = Vector.fromAngle((360 + (this.model.velocity.toAngle() + angleChange)) % 360)
         }
     },
     
@@ -186,22 +211,21 @@ RunnerController.prototype = {
             genes = this.model.genes;
         genes.generateRandomData();
         model.position = new Vector(randomInt(0, game.width), randomInt(0, game.height));
+        model.velocity = new Vector(0, 1);//(randomInt(-10, 10), randomInt(-10, 10));
+        model.prevPosition = model.position.copy();
         model.angleConfidence = genes.get("angleConfidence");
         model.pathConfidence = genes.get("pathConfidence");
         model.speedConfidence = genes.get("speedConfidence");
         model.directionalBias = genes.get("directionalBias");
         model.speedBias = genes.get("speedBias");
-        model.angle = randomInt(0, 360);
         var r = parseInt(genes.get("red") * 255),
             g = parseInt(genes.get("green") * 255),
             b = parseInt(genes.get("blue") * 255);
         model.colour = {r:r, g:g, b:b};
         model.size = mapValue(genes.get("size"), 0, 1, 10, 20);
         model.originalSpeed = model.speed = (model.size/3) * genes.get("speed");
-        this.setupTail();
         model.framesInExistance = 0;
-        model.totalPreviousPositions = model.tailLength * model.tailSpacing;
-        model.previousPositions = [];
+        this.setupTail();
         
 //        console.log(model.genes);
     },
@@ -220,21 +244,39 @@ RunnerController.prototype = {
                 model.tailLength = randomInt(30, 40);
                 break;
         } 
+        console.log(this.model.velocity)
+        console.log(this.model.velocity.toAngle())
+        model.tailLength = 5
         model.tailSpacing = 2;
         model.tailIndex = 0;
         model.tail = new Array(model.tailLength);
         model.tailColours = new Array(model.tailLength);
         var originalColour = model.colour;
         for(var i = 0; i < model.tailLength; i++) {
-            var varyColourBy = mapValue(genes.get("brightnessVariation"), 0, 1, 0, (Math.random() * 2) - 1);
-            var brightnessModifier = parseInt(mapValue(varyColourBy, -1, 1, -100, 100));
+            var varyBrightnessBy = mapValue(genes.get("brightnessVariation"), 0, 1, 0, (Math.random() * 2) - 1);
+            var brightnessModifier = parseInt(mapValue(varyBrightnessBy, -1, 1, -100, 100));
             var newTailColour = brightenColour(originalColour, brightnessModifier);
             model.tailColours[i] = rgbObjToHexColourString(newTailColour);
         }
         
+        var currentLength = 0;
+        console.log("startPos: " + model.position)
         for(var i = 0; i < model.tailLength; i++) {
-            model.tail[i] = {position: model.position.copy(), angle: model.angle};
+            var currentSegment = {position: model.position.copy(), size: mapValue(i, 0, model.tailLength, model.size, model.size * 0.4), index: i},
+                parent = model.tail[i-1] || model,
+                hyp = new Vector(parent.size/2 + currentSegment.size/2, parent.size/2 + currentSegment.size/2).mag();
+            console.log("hyp: " + Math.round(hyp));
+            var x = hyp * Math.cos(degToRad(parent.velocity.toAngle())),
+                y = hyp * Math.sin(degToRad(parent.velocity.toAngle()));
+            currentLength += (currentSegment.size * 1);
+            console.log(new Vector(x,y).toString());
+            currentSegment.position = new Vector(-x, -y).add(parent.position);
+            console.log("new position: " + currentSegment.position)
+            currentSegment.velocity = parent.velocity.copy();
+            model.tail[i] = currentSegment;
+            console.log("angle: " + Math.round(currentSegment.velocity.toAngle()));
         }
+        console.log(model.tail);
     },
     
     reactToObjects: function() {
@@ -285,9 +327,9 @@ RunnerController.prototype = {
     },
     
     update:function() {
-        this.reactToObjects();
+//        this.reactToObjects();
         this.changeDirection();
-        this.advance(this.model.speed);
+//        this.advance(this.model.speed);
         this.model.framesInExistance++;
     }
     

@@ -12,7 +12,7 @@ function Game() {
         Events(this);
         $('body').append('<div id="canvasContainer"><canvas id="gameCanvas"></canvas></div>');
         this.lastCalledTime = new Date().getTime();
-        this.numberOfDudes = 2;
+        this.numberOfDudes = 1;
         this.frame = 0;
         this.slowFrameRate = 1;
         this.fps = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
@@ -28,7 +28,7 @@ Game.prototype = {
             this.update();
             this.render();
         }
-        this.frame ++;
+        this.frame++;
         var deltaTime = (new Date().getTime() - this.lastCalledTime) / 1000;
         this.lastCalledTime = new Date().getTime();
         this.fps[this.frame & this.fps.length] = Math.round(1/deltaTime);
