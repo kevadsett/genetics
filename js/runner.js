@@ -200,8 +200,6 @@ RunnerController.prototype = {
         model.originalSpeed = model.speed = (model.size/3) * genes.get("speed");
         this.setupTail();
         model.framesInExistance = 0;
-        model.totalPreviousPositions = model.tailLength * model.tailSpacing;
-        model.previousPositions = [];
         
 //        console.log(model.genes);
     },
@@ -220,7 +218,6 @@ RunnerController.prototype = {
                 model.tailLength = randomInt(30, 40);
                 break;
         } 
-        model.tailSpacing = 2;
         model.tailIndex = 0;
         model.tail = new Array(model.tailLength);
         model.tailColours = new Array(model.tailLength);
