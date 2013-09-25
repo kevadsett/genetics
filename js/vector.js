@@ -10,7 +10,9 @@ Vector.fromAngle = function(angle) {
 
 Vector.prototype = {
     add: function(vector) {
-        return new Vector(this.x + vector.x, this.y + vector.y);
+        this.x += vector.x;
+        this.y += vector.y;
+        return this;
     },
     copy: function() {
         return new Vector(this.x, this.y);
