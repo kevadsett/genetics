@@ -5,7 +5,7 @@ function Vector(x, y) {
 
 Vector.fromAngle = function(angle) {
     angle = degToRad(angle);
-    return new Vector(Math.sin(angle), Math.cos(angle));
+    return new Vector(Math.cos(angle), Math.sin(angle));
 }
 
 Vector.prototype = {
@@ -20,11 +20,19 @@ Vector.prototype = {
     equalTo: function(vector) {
         return vector.x == this.x && vector.y == this.y;
     },
+    getPositionBehind: function(distance) {
+        var x = distance * Math.cos(degToRad(this.toAngle())),
+            y = distance * Math.sin(degToRad(this.toAngle()));
+        return new Vector(-x,-y);
+    },
     mag: function() {
         return Math.sqrt(this.x * this.x + this.y * this.y);
     },
     scale: function(newScale) {
         return new Vector(this.x * newScale, this.y * newScale);
+    },
+    sub: function(vector) {
+        return new Vector(vector.x - this.x, vector.y, this.y);
     },
     toAngle: function() {
         var quadrantStartAngle = 0;

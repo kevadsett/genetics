@@ -41,25 +41,7 @@ RunnerView.prototype = {
     render: function() {
         this.context.lineWidth = 2;
         
-        this.context.fillStyle = this.model.tailColours[0];
-        
-//        for(var i = this.model.tailLength-1; i >= 0; i--) {
-        for(var i = 0; i < this.model.tailLength; i++) {
-            this.context.fillStyle = this.model.tailColours[i];
-            this.renderBodySegment(this.model.tail[i]);
-        }
-        
-        this.renderEyes(this.model.tail[0]);
-    },
-    
-    renderBodySegment: function(segment) {
-        if(!segment.position) return;
-        this.context.save();
-        this.context.translate(segment.position.x, segment.position.y);
-        this.context.rotate(degToRad(segment.velocity.toAngle()));
-        var size = segment.size;
-        this.context.fillRect(-size/2, -size/2, size, size);
-        this.context.restore();
+        this.renderEyes(this.model.tail[0].model);
     },
     
     renderEyes: function(segment) {
@@ -87,87 +69,44 @@ RunnerView.prototype = {
 }
 
 function RunnerController(model) {
+    Events(this);
     this.model = model;
     this.setupAttributes();
-    this.view = new RunnerView(model, game.canvas.getContext('2d'));
+    this.view = new RunnerView(model, game.context);
     game.on('update', this.update, this);
 }
 
 RunnerController.prototype = {
-    /*advance:function(speed) {
-        var speedChange = mapValue(this.model.velocityConfidence, 0, 1, randomInt(0, 2), 0);
-        if (Math.random() > this.model.velocityBias) {
-            speedChange = -speedChange;
-        }
-        speed += speedChange;
-        speed = 1;
-        
-        this.model.position = this.getNextPosition(this.model.position, speed, this.model.angle);
-        
-//        for(var i = this.model.tailLength -1; i >= 0 ; i--) {
-        for(var i = 0; i < this.model.tailLength; i++) {
-            this.advanceSegment(this.model.tail[i], speed);
-        }
-        if(!this.model.prevPosition.equalTo(this.model.position)) {
-            this.model.prevPosition = this.model.position.copy();
-        }
-        if(this.model.prevAngle != this.model.angle) {
-            this.model.prevAngle = this.model.angle;
-        }
-    },*/
     
     advance: function() {
         var speedChange = mapValue(this.model.velocityConfidence, 0, 1, randomInt(0, 2), 0);
         if (Math.random() > this.model.velocityBias) {
             speedChange = -speedChange;
         }
-        this.model.position.add(this.model.velocity.scale(speedChange));
-        for(var i = this.model.tailLength -1; i >=0 ; i--) {
-            this.advanceSegment(this.model.tail[i]);
-        }
+        this.model.position.add(this.model.velocity);
+        this.checkForBoundaries();
     },
     
-    advanceSegment: function(segment) {
-        var parent = this.model.tail[segment.index - 1] || this.model;
-        segment.velocity = parent.velocity.copy();
-        segment.position.add(segment.velocity);
-        //this.checkForBoundaries(segment);
-    },
-    
-    /*advanceSegment: function(segment, speed) {
-        var parent = this.model.tail[segment.index - 1] || this.model;
-        var moveAmount = parent.size == segment.size ? 0 : -(speed + (parent.size + segment.size)/2);
-        segment.position = this.getNextPosition(parent.position, moveAmount , parent.angle)
-        segment.angle = getAngle(segment.position, parent.prevPosition)
-//        segment.prevPosition = segment.position.copy();
-    },*/
-    
-    checkForBoundaries: function(segment) {
-        var size = segment.size;
-        if(segment.position.x < 0) {
-            segment.position.x = game.width ;
-        } else if (segment.position.x > game.width) {
-            segment.position.x = 0;
+    checkForBoundaries: function() {
+        if(this.model.position.x + this.model.velocity.x < 0 || this.model.position.x + this.model.velocity.x > game.width) {
+            this.model.velocity.x = -this.model.velocity.x;
+            this.emit("moveDecisionMade", {pos:this.model.position.copy(), vel:this.model.velocity.copy()});
         }
-        if(segment.position.y < 0) {
-            segment.position.y = game.height;
-        } else if (segment.position.y > game.height ) {
-            segment.position.y = 0;
+        if(this.model.position.y + this.model.velocity.y < 0 || this.model.position.y + this.model.velocity.y > game.height) {
+            this.model.velocity.y = -this.model.velocity.y;
+            this.emit("moveDecisionMade", {pos:this.model.position.copy(), vel:this.model.velocity.copy()});
         }
+        
     },
     
     changeDirection: function() {
-        if(Math.random() > this.model.pathConfidence) {
-            console.log("currentVelocity: " + this.model.velocity);
+        if(this.model.framesInExistance % 25 == 0/*Math.random() > this.model.pathConfidence*/) {
             var currentAngle = this.model.velocity.toAngle(),
                 mag = this.model.velocity.mag(),
-                angleChange = (Math.random() * 2) - 1;
-            console.log(currentAngle);
-            console.log(angleChange);
+                angleChange = ((Math.random() * 2) - 1) * 45;
             currentAngle += angleChange;
-            console.log(Vector.fromAngle(currentAngle).scale(mag));
             this.model.velocity = Vector.fromAngle(currentAngle).scale(mag);
-            console.log(this.model.velocity);
+            this.emit("moveDecisionMade", {pos:this.model.position.copy(), vel:this.model.velocity.copy()});
         }
     },
     
@@ -215,7 +154,6 @@ RunnerController.prototype = {
             genes = this.model.genes;
         genes.generateRandomData();
         model.position = new Vector(game.width/2, game.height/2);//(randomInt(0, game.width), randomInt(0, game.height));
-        model.velocity = new Vector(randomInt(-5, 5), randomInt(-5, 5));
         model.prevPosition = model.position.copy();
         model.angleConfidence = genes.get("angleConfidence");
         model.pathConfidence = genes.get("pathConfidence");
@@ -227,6 +165,7 @@ RunnerController.prototype = {
             b = parseInt(genes.get("blue") * 255);
         model.colour = {r:r, g:g, b:b};
         model.size = mapValue(genes.get("size"), 0, 1, 10, 20);
+        model.velocity = new Vector(Math.random() * 2 - 1, Math.random() * 2 - 1);
         model.framesInExistance = 0;
         this.setupTail();
         
@@ -236,6 +175,9 @@ RunnerController.prototype = {
     setupTail: function() {
         var model = this.model,
             genes = this.model.genes;
+        
+        model.tail = [];
+        
         switch(Math.round(genes.get("tailLength") * 2)) {
             case 0:
                 model.tailLength = randomInt(10, 20);
@@ -247,43 +189,22 @@ RunnerController.prototype = {
                 model.tailLength = randomInt(30, 40);
                 break;
         } 
-        console.log(this.model.velocity)
-        console.log(this.model.velocity.toAngle())
-        model.tailLength = 25
-        model.tailSpacing = 2;
-        model.tailIndex = 0;
-        model.tail = new Array(model.tailLength);
-        model.tailColours = new Array(model.tailLength);
-        var originalColour = model.colour;
-        for(var i = 0; i < model.tailLength; i++) {
-            var varyBrightnessBy = mapValue(genes.get("brightnessVariation"), 0, 1, 0, (Math.random() * 2) - 1);
-            var brightnessModifier = parseInt(mapValue(varyBrightnessBy, -1, 1, -100, 100));
-            var newTailColour = brightenColour(originalColour, brightnessModifier);
-            model.tailColours[i] = rgbObjToHexColourString(newTailColour);
-        }
         
-        var currentLength = 0;
-        console.log("startPos: " + model.position)
+        //debug
+        model.tailLength = 25;
+        
+        
         for(var i = 0; i < model.tailLength; i++) {
-            var currentSegment = {
-                position: model.position.copy(), 
-                size: mapValue(i, 0, model.tailLength, model.size, model.size * 0.4), 
-                index: i
-            },
-                parent = model.tail[i-1] || model,
-                hyp = new Vector(currentSegment.size/2, currentSegment.size/2).mag();
-            console.log("hyp: " + Math.round(hyp));
-            var x = hyp * Math.cos(degToRad(parent.velocity.toAngle())),
-                y = hyp * Math.sin(degToRad(parent.velocity.toAngle()));
-            currentLength += (currentSegment.size * 1);
-            console.log(new Vector(x,y).toString());
-            currentSegment.position = new Vector(-x, -y).add(parent.position);
-            console.log("new position: " + currentSegment.position)
-            currentSegment.velocity = parent.velocity.copy();
-            model.tail[i] = currentSegment;
-            console.log("angle: " + Math.round(currentSegment.velocity.toAngle()));
+            var size = mapValue(i, 0, model.tailLength, model.size, model.size * 0.4), 
+                index = i,
+                parent = model.tail[i-1] ? model.tail[i-1].model : model,
+                currentSegment = new SegmentController(new SegmentModel(index, size, model.colour, genes.get("brightnessVariation")), parent);
+            
+            this.on('moveDecisionMade', currentSegment.onMoveDecisionMade, currentSegment);
+            
+            model.tail.push(currentSegment);
         }
-        console.log(model.tail);
+                    
     },
     
     reactToObjects: function() {

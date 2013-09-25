@@ -7,7 +7,6 @@ function Allele(type, value, dominant) {
 Allele.prototype = {
     generateRandomData: function() {
         var randomValue = Math.random();
-        console.log(this.type);
         if(allelDominance[this.type].type == "loMedHi") {
             switch (true) {
                 case randomValue < 0.3333:
@@ -106,7 +105,6 @@ dna.prototype = {
         }
     },
     get: function(key) {
-        console.log(key);
         if(this.chromosomes[key]) {
             return this.chromosomes[key];
         } else {

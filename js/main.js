@@ -14,7 +14,7 @@ function Game() {
         this.lastCalledTime = new Date().getTime();
         this.numberOfDudes = 1;
         this.frame = 0;
-        this.slowFrameRate = 100;
+        this.slowFrameRate = 1;
         this.fps = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
         this.setup();
         this.loop();

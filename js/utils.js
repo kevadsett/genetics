@@ -126,3 +126,11 @@ function limitNumber(value, lowerLimit, upperLimit) {
     if(value < lowerLimit) value = lowerLimit;
     return value;
 }
+
+function ease(value, target, easing, precision) {
+    var delta = target - value;
+    if(Math.abs(delta) > (precision || 1)) {
+        value += delta * easing;
+    }
+    return value;
+}
