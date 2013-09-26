@@ -1,35 +1,41 @@
-function RunnerModel() {
-    this.genes = new dna({
-    behaviour: new Chromosome(
-        ["speed",
-         "pathConfidence", 
-         "angleConfidence", 
-         "speedConfidence", 
-         "senseRadius",
-         "caresAboutObjects",
-         "objectAffectsSpeed",
-         "speedObjectEffect",
-         "objectAffectsDirectionalBias",
-         "directionalBiasObjectEffect",
-         "objectAffectsSpeedConfidence",
-         "speedConfidenceObjectEffect",
-         "objectAffectsAngleConfidence",
-         "angleConfidenceObjectEffect",
-         "objectAffectsPathConfidence",
-         "pathConfidenceObjectEffect",
-         "directionalBias",
-         "speedBias"
-        ]),
-     appearance: new Chromosome(
-         ["tailLength", 
-          "size",
-          "colourVariation",
-          "brightnessVariation",
-          "red", 
-          "green",
-          "blue"
-         ])
-    });
+function RunnerModel(genes) {
+    if(!!genes) {
+        this.genes = genes;
+        this.isOffspring = true;
+    } else {
+        this.isOffspring = false;
+        this.genes = new dna({
+        behaviour: new Chromosome(
+            ["speed",
+             "pathConfidence", 
+             "angleConfidence", 
+             "speedConfidence", 
+             "senseRadius",
+             "caresAboutObjects",
+             "objectAffectsSpeed",
+             "speedObjectEffect",
+             "objectAffectsDirectionalBias",
+             "directionalBiasObjectEffect",
+             "objectAffectsSpeedConfidence",
+             "speedConfidenceObjectEffect",
+             "objectAffectsAngleConfidence",
+             "angleConfidenceObjectEffect",
+             "objectAffectsPathConfidence",
+             "pathConfidenceObjectEffect",
+             "directionalBias",
+             "speedBias"
+            ]),
+         appearance: new Chromosome(
+             ["tailLength", 
+              "size",
+              "colourVariation",
+              "brightnessVariation",
+              "red", 
+              "green",
+              "blue"
+             ])
+        });
+    }
 }
 
 function RunnerView(model, context) {
@@ -184,7 +190,9 @@ RunnerController.prototype = {
     setupAttributes: function() {
         var model = this.model,
             genes = this.model.genes;
-        genes.generateRandomData();
+        if(!this.model.isOffSpring) {
+            genes.generateRandomData();
+        }
         model.position = new Vector(randomInt(0, game.width), randomInt(0, game.height));
         model.angleConfidence = genes.get("angleConfidence");
         model.pathConfidence = genes.get("pathConfidence");

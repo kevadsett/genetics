@@ -57,6 +57,10 @@ Chromosome.prototype = {
             }
         }
     },
+    populateData: function(strand1, strand2) {
+        this.strands[0] = cloneObject(strand1);
+        this.strands[1] = cloneObject(strand2);
+    },
     setValue:function(type, value) {
         this.strands[0][type].value = this.strands[1][type].value = value;
     },
@@ -195,4 +199,16 @@ dna.prototype = {
             }
         }
     }
+}
+
+function makeABaby(parent1, parent2) {
+    var parent1Cells = parent1.genes.meiosis(),
+        parent2Cells = parent2.genes.meiosis(),
+        babyChromosomes = {},
+        seeds = [randomInt(0,4), randomInt(0,4)];
+    for(var key in parent1.genes.chromosomes) {
+        babyChromosomes[key] = new Chromosome(parent1.genes.chromosomes[key].loci);
+        babyChromosomes[key].populateData(parent1Cells[seeds[0]][key], parent1Cells[seeds[1]][key]);
+    }
+    return new dna(babyChromosomes);
 }
