@@ -41,7 +41,6 @@ Allele.prototype = {
 function Chromosome(types) {
     this.strands = new Array(2);
     this.loci = types;
-    this.numLoci = types.length;
     var loci = {};
     for(var i = 0; i < types.length; i++) {
         loci[types[i]] = new Allele(types[i]);
@@ -84,6 +83,71 @@ Chromosome.prototype = {
                 }
             }
         }
+    },
+    crossover: function() {
+        var resultingChromosome = cloneObject(this);
+        var crossoverPoint = this.loci.length;
+        if(Math.random() > 0.5) {
+            crossoverPoint = randomInt(0, this.loci.length);
+            console.log("crossoverPoint: " + crossoverPoint);
+        } else {
+            console.log("no crossover");
+            return resultingChromosome;
+        }
+        
+        for(var i = 0; i < this.loci.length; i++) {
+            var type = this.loci[i];
+            var alleles = [cloneObject(resultingChromosome.strands[0][type]), cloneObject(resultingChromosome.strands[1][type])];
+            console.log("---" + type + "---");
+            console.log(alleles[0], alleles[1]);
+            if(i >= crossoverPoint) {
+                console.log("swapping alleles");
+                resultingChromosome.strands[0][type] = alleles[1];
+                resultingChromosome.strands[1][type] = alleles[0];
+            }
+        }
+        return resultingChromosome;
+    },
+    conversion: function() {
+        var resultingChromosome = cloneObject(this);
+        var conversionPoints = [0, this.loci.length];
+        if(Math.random() > 0.5) {
+            for(var i = 0; i < 2; i++) {
+                conversionPoints[i] = randomInt(0, this.loci.length)
+            }
+            conversionPoints.sort(function compare(a, b) {
+              if (a < b) return -1;
+              if (a > b) return 1;
+              return 0;
+            });
+            if(conversionPoints[0] == conversionPoints[1]){
+                console.log("no conversion");
+                return resultingChromosome;
+            }
+            console.log("conversionPoints: " + conversionPoints);
+        } else {
+            console.log("no conversion");
+            return resultingChromosome;
+        }
+        
+        
+        for(var i = 0; i < this.loci.length; i++) {
+            var type = this.loci[i];
+            var alleles = [resultingChromosome.strands[0][type], resultingChromosome.strands[1][type]];
+            console.log("---" + type + "---");
+            console.log(alleles[0], alleles[1]);
+            if(i >= conversionPoints[0] && i < conversionPoints[1]) {
+                console.log("swapping alleles");
+                resultingChromosome.strands[0][type] = alleles[1];
+                resultingChromosome.strands[1][type] = alleles[0];
+            }
+        }
+        return resultingChromosome;
+    },
+    mutation: function() {
+        var resultingChromosome = cloneObject(this);
+        // TODO
+        return resultingChromosome;
     }
 }
 
@@ -97,60 +161,26 @@ function dna (chromosomes) {
 dna.prototype = {
     generateRandomData: function() {
         for(var key in this.chromosomes) {
+            console.log(this.chromosomes[key]);
             this.chromosomes[key].generateRandomData();
         }
     },
     meiosis: function() {
-        var chromeCopy = cloneObject(this.chromosomes);
-        console.log(chromeCopy);
-        var daughterObject0 = {};
-        var daughterObject1 = {};
-        var daughterObject2 = {};
-        var daughterObject3 = {};
-        for(var key in this.chromosomes) {
-            console.log(key);
-            daughterObject0[key] = {};
-            daughterObject1[key] = {};
-            daughterObject2[key] = {};
-            daughterObject3[key] = {};
-            var crossoverPoint = this.chromosomes[key].numLoci;
-            if(Math.random() > 0.5) {
-                crossoverPoint = randomInt(0, this.chromosomes[key].numLoci);
-                console.log(crossoverPoint);
-            }
-            var conversionPoints = [0, this.chromosomes[key].numLoci];
-            if(Math.random() > 0.5) {
-                for(var i = 0; i < 2; i++) {
-                    conversionPoints[i] = randomInt(0, this.chromosomes[key].numLoci)
-                }
-                conversionPoints.sort(function compare(a, b) {
-                  if (a is less than b by some ordering criterion)
-                     return -1;
-                  if (a is greater than b by the ordering criterion)
-                     return 1;
-                  // a must be equal to b
-                  return 0;
-                });
-                console.log(conversionPoints);
-            }
-            
-            console.log(this.chromosomes[key]);
-            for(var locus in this.chromosomes[key].strands[0]) {
-                daughterObject0[key][locus] = this.chromosomes[key].strands[0][locus];
-            }
-            for(var locus in this.chromosomes[key].strands[1]) {
-                daughterObject1[key][locus] = this.chromosomes[key].strands[1][locus];
-            }
-            for(var locus in chromeCopy[key].strands[0]) {
-                daughterObject2[key][locus] = chromeCopy[key].strands[0][locus];
-            }
-            for(var locus in chromeCopy[key].strands[1]) {
-                daughterObject3[key][locus] = chromeCopy[key].strands[1][locus];
+        var chromeCopies = [cloneObject(this.chromosomes), cloneObject(this.chromosomes)];
+        var daughterCells = [{},{},{},{}];
+        for(var i = 0; i < chromeCopies.length; i++) {
+            for(var key in chromeCopies[i]) {
+                chromeCopies[i][key] = chromeCopies[i][key].crossover().conversion().mutation();
+                daughterCells[0][key] = chromeCopies[0][key].strands[0];
+                daughterCells[1][key] = chromeCopies[0][key].strands[1];
+                daughterCells[2][key] = chromeCopies[1][key].strands[0];
+                daughterCells[3][key] = chromeCopies[1][key].strands[1];
             }
         }
-        
-        
-        return [daughterObject0, daughterObject1, daughterObject2, daughterObject3];
+        for(var key in chromeCopies[i]) {
+            
+        }
+        return daughterCells;
         
     },
     get: function(key) {
