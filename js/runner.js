@@ -29,7 +29,7 @@ function RunnerModel(genes) {
              ["tailLength", 
               "size",
               "colourVariation",
-              "brightnessVariation",
+              "stripy",
               "red", 
               "green",
               "blue"
@@ -209,9 +209,9 @@ RunnerController.prototype = {
             genes.generateRandomData();
         }
         model.position = new Vector(randomInt(0, game.width), randomInt(0, game.height));
-        model.angleConfidence = genes.get("angleConfidence");
-        model.pathConfidence = genes.get("pathConfidence");
-        model.speedConfidence = genes.get("speedConfidence");
+        model.angleConfidence = 1//genes.get("angleConfidence");
+        model.pathConfidence = 1//genes.get("pathConfidence");
+        model.speedConfidence = 1//genes.get("speedConfidence");
         model.directionalBias = genes.get("directionalBias");
         model.speedBias = genes.get("speedBias");
         model.angle = randomInt(0, 360);
@@ -241,12 +241,13 @@ RunnerController.prototype = {
                 model.tailLength = randomInt(30, 40);
                 break;
         } 
+        model.tailLength = 20;
         model.tailIndex = 0;
         model.tail = new Array(model.tailLength);
         model.tailColours = new Array(model.tailLength);
         var originalColour = model.colour;
         for(var i = 0; i < model.tailLength; i++) {
-            var varyColourBy = mapValue(genes.get("brightnessVariation"), 0, 1, 0, (Math.random() * 2) - 1);
+            var varyColourBy = mapValue(genes.get("stripy"), 0, 1, 0, (Math.random() * 2) - 1);
             var brightnessModifier = parseInt(mapValue(varyColourBy, -1, 1, -100, 100));
             var newTailColour = brightenColour(originalColour, brightnessModifier);
             model.tailColours[i] = rgbObjToHexColourString(newTailColour);
@@ -292,9 +293,9 @@ RunnerController.prototype = {
         } else {
             this.model.speed = this.model.originalSpeed;
             this.model.directionalBias = this.model.genes.get("directionalBias");
-            this.model.speedConfidence = this.model.genes.get("speedConfidence");
-            this.model.angleConfidence = this.model.genes.get("angleConfidence");
-            this.model.pathConfidence = this.model.genes.get("pathConfidence");
+            this.model.speedConfidence = 1//this.model.genes.get("speedConfidence");
+            this.model.angleConfidence = 1//this.model.genes.get("angleConfidence");
+            this.model.pathConfidence = 1//this.model.genes.get("pathConfidence");
         }
     },
     
@@ -305,8 +306,8 @@ RunnerController.prototype = {
     },
     
     update:function() {
-        this.reactToObjects();
-        this.changeDirection();
+//        this.reactToObjects();
+//        this.changeDirection();
         this.advance(this.model.speed);
         this.model.framesInExistance++;
     }

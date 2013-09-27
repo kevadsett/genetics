@@ -7,30 +7,43 @@ function Allele(type, value, dominant) {
 Allele.prototype = {
     generateRandomData: function() {
         var randomValue = Math.random();
-        if(allelDominance[this.type].type == "loMedHi") {
+        if(alleleDominance[this.type].type == "loMedHi") {
             switch (true) {
                 case randomValue < 0.3333:
                     this.stringValue = "low";
-                    this.dominant = allelDominance[this.type].low;
+                    this.dominant = alleleDominance[this.type].low;
                     break;
                 case randomValue < 0.6667:
                     this.stringValue = "medium";
-                    this.dominant = allelDominance[this.type].medium;
+                    this.dominant = alleleDominance[this.type].medium;
                     break;
                 case randomValue <= 1:
                     this.stringValue = "high";
-                    this.dominant = allelDominance[this.type].high;
+                    this.dominant = alleleDominance[this.type].high;
                 break;
             }
-        } else if (allelDominance[this.type].type == "loHi") {
+        } else if (alleleDominance[this.type].type == "loHi") {
             switch (true) {
                 case randomValue < 0.5:
                     this.stringValue = "low";
-                    this.dominant = allelDominance[this.type].low;
+                    this.dominant = alleleDominance[this.type].low;
                     break;
                 case randomValue <=1:
                     this.stringValue = "high";
-                    this.dominant = allelDominance[this.type].high;
+                    this.dominant = alleleDominance[this.type].high;
+                break;
+            }
+        } else if (alleleDominance[this.type].type == "onOff") {
+            switch (true) {
+                case randomValue < 0.5:
+                    this.stringValue = "low";
+                    this.dominant = alleleDominance[this.type].low;
+                    randomValue = 0;
+                    break;
+                case randomValue <=1:
+                    this.stringValue = "high";
+                    this.dominant = alleleDominance[this.type].high;
+                    randomValue = 1;
                 break;
             }
         }
