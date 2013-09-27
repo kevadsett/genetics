@@ -93,19 +93,14 @@ Chromosome.prototype = {
         var crossoverPoint = this.loci.length;
         if(Math.random() > 0.5) {
             crossoverPoint = randomInt(0, this.loci.length);
-            console.log("crossoverPoint: " + crossoverPoint);
         } else {
-            console.log("no crossover");
             return resultingChromosome;
         }
         
         for(var i = 0; i < this.loci.length; i++) {
             var type = this.loci[i];
             var alleles = [cloneObject(resultingChromosome.strands[0][type]), cloneObject(resultingChromosome.strands[1][type])];
-            console.log("---" + type + "---");
-            console.log(alleles[0], alleles[1]);
             if(i >= crossoverPoint) {
-                console.log("swapping alleles");
                 resultingChromosome.strands[0][type] = alleles[1];
                 resultingChromosome.strands[1][type] = alleles[0];
             }
@@ -125,12 +120,9 @@ Chromosome.prototype = {
               return 0;
             });
             if(conversionPoints[0] == conversionPoints[1]){
-                console.log("no conversion");
                 return resultingChromosome;
             }
-            console.log("conversionPoints: " + conversionPoints);
         } else {
-            console.log("no conversion");
             return resultingChromosome;
         }
         
@@ -138,10 +130,7 @@ Chromosome.prototype = {
         for(var i = 0; i < this.loci.length; i++) {
             var type = this.loci[i];
             var alleles = [resultingChromosome.strands[0][type], resultingChromosome.strands[1][type]];
-            console.log("---" + type + "---");
-            console.log(alleles[0], alleles[1]);
             if(i >= conversionPoints[0] && i < conversionPoints[1]) {
-                console.log("swapping alleles");
                 resultingChromosome.strands[0][type] = alleles[1];
                 resultingChromosome.strands[1][type] = alleles[0];
             }
@@ -165,7 +154,6 @@ function dna (chromosomes) {
 dna.prototype = {
     generateRandomData: function() {
         for(var key in this.chromosomes) {
-            console.log(this.chromosomes[key]);
             this.chromosomes[key].generateRandomData();
         }
     },

@@ -131,8 +131,8 @@ var allelDominance = {
     }, 
     green: {
         type: "loHi",
-        low: true,
-        high: false
+        low: false,
+        high: true
     },
     blue: {
         type: "loHi",

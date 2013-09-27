@@ -36,6 +36,7 @@ function RunnerModel(genes) {
              ])
         });
     }
+    this.type = "runner";
 }
 
 function RunnerView(model, context) {
@@ -45,6 +46,9 @@ function RunnerView(model, context) {
 }
 
 RunnerView.prototype = {
+    destroy: function() {
+        game.off('render');
+    },
     render: function() {
         this.context.lineWidth = 2;
         
@@ -99,6 +103,7 @@ function RunnerController(model) {
     this.setupAttributes();
     this.view = new RunnerView(model, game.canvas.getContext('2d'));
     game.on('update', this.update, this);
+    game.on('generationEnded', this.destroy, this);
 }
 
 RunnerController.prototype = {
@@ -148,6 +153,12 @@ RunnerController.prototype = {
         }
     },
     
+    destroy: function() {
+        game.off('update', this.update, this);
+        game.off('generationEnded', this.destroy, this);;
+        this.view.destroy();
+    },
+    
     detectObjects: function() {
         var detectedObjects = [];
         for(var i = 0; i < game.numberOfDudes; i++) {
@@ -181,7 +192,11 @@ RunnerController.prototype = {
     getDistanceToNearestObject: function() {
         var nearestObj = this.getNearestObject();
         if(!!nearestObj) {
-            return distance(this.model.position, this.getNearestObject().position);
+            var dist = distance(this.model.position, this.getNearestObject().position);
+            if(nearestObj.type == "ball" && dist < nearestObj.radius) {
+                game.emit("runnerCollidedWithBall", {runner: this});
+            }
+            return distance;
         } else {
             return -1;
         }

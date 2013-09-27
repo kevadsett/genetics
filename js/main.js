@@ -12,7 +12,7 @@ function Game() {
         Events(this);
         $('body').append('<div id="canvasContainer"><canvas id="gameCanvas"></canvas></div>');
         this.lastCalledTime = new Date().getTime();
-        this.numberOfDudes = 2;
+        this.runnersPerGeneration = 25;
         this.frame = 0;
         this.slowFrameRate = 1;
         this.fps = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
@@ -63,7 +63,7 @@ Game.prototype = {
         this.resizeCanvas();
 //        $(window).on('resize', this.resizeCanvas, this);
         this.runners = [];
-        for(var i = 0; i < this.numberOfDudes; i++) {
+        for(var i = 0; i < this.runnersPerGeneration; i++) {
             this.runners.push(new RunnerController(new RunnerModel()));
         }
         this.ball = new BallController(new BallModel());
