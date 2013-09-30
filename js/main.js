@@ -12,6 +12,7 @@ function Game() {
         Events(this);
         $('body').append('<div id="canvasContainer"><canvas id="gameCanvas"></canvas></div>');
         this.lastCalledTime = new Date().getTime();
+        this.leftOverTime = 0;
         this.runnersPerGeneration = 2;
         this.frame = 0;
         this.slowFrameRate = 1;
@@ -24,6 +25,19 @@ function Game() {
 Game.prototype = {
     loop: function() {
         requestAnimFrame($.proxy(this.loop, this));
+        
+        var currentTime = new Date().getTime(),
+            elapsedTime = this.lastCalledTime - currentTime + this.leftOverTime;
+        this.lastCalledTime = currentTime;
+        var timeSteps = Math.floor(elapsedTime / 16);
+        this.leftOverTime = elapsedTime - timeSteps * 16;
+        
+        for(var i = 0; i < timeSteps; i++) {
+            this.update();
+            this.render();
+        }
+        
+        /*
         if((this.frame % this.slowFrameRate) == 0) {
             this.update();
             this.render();
@@ -36,7 +50,7 @@ Game.prototype = {
         for(var i = 0; i < this.fps.length; i++) {
             this.averageFPS += this.fps[i];
         }
-        this.averageFPS /= this.fps.length;
+        this.averageFPS /= this.fps.length;*/
     },
     render: function() {
         this.context.clearRect(0, 0, this.width, this.height);
