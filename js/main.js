@@ -11,12 +11,6 @@ function Game() {
     $(document).ready($.proxy(function() {
         Events(this);
         $('body').append('<div id="canvasContainer"><canvas id="gameCanvas"></canvas></div>');
-        this.lastCalledTime = new Date().getTime();
-        this.leftOverTime = 0;
-        this.runnersPerGeneration = 2;
-        this.frame = 0;
-        this.slowFrameRate = 1;
-        this.fps = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
         this.setup();
         this.loop();
     }, this));
@@ -27,30 +21,22 @@ Game.prototype = {
         requestAnimFrame($.proxy(this.loop, this));
         
         var currentTime = new Date().getTime(),
-            elapsedTime = this.lastCalledTime - currentTime + this.leftOverTime;
+            elapsedTime = currentTime - this.lastCalledTime + this.leftOverTime;
         this.lastCalledTime = currentTime;
         var timeSteps = Math.floor(elapsedTime / 16);
         this.leftOverTime = elapsedTime - timeSteps * 16;
-        
         for(var i = 0; i < timeSteps; i++) {
+            this.timestepSquared = i * i;
             this.update();
-            this.render();
         }
+        this.render();
         
-        /*
-        if((this.frame % this.slowFrameRate) == 0) {
-            this.update();
-            this.render();
-        }
-        this.frame ++;
-        var deltaTime = (new Date().getTime() - this.lastCalledTime) / 1000;
-        this.lastCalledTime = new Date().getTime();
-        this.fps[this.frame & this.fps.length] = Math.round(1/deltaTime);
+        this.fps[this.frame & this.fps.length] = 1/elapsedTime;
         this.averageFPS = 0;
         for(var i = 0; i < this.fps.length; i++) {
             this.averageFPS += this.fps[i];
         }
-        this.averageFPS /= this.fps.length;*/
+        this.averageFPS /= this.fps.length;
     },
     render: function() {
         this.context.clearRect(0, 0, this.width, this.height);
@@ -74,6 +60,15 @@ Game.prototype = {
     setup: function() {
         this.canvas = document.getElementById('gameCanvas');
         this.context = this.canvas.getContext('2d');
+        
+        this.lastCalledTime = new Date().getTime();
+        this.leftOverTime = 0;
+        this.runnersPerGeneration = 50;
+        this.frame = 0;
+        this.slowFrameRate = 1;
+        this.fps = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
+        this.NUM_CONSTRAINT_SOLVE = 3;
+        
         this.resizeCanvas();
 //        $(window).on('resize', this.resizeCanvas, this);
         this.runners = [];

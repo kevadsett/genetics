@@ -1,5 +1,5 @@
 var alleleDominance = {
-    speed: {
+    velocity: {
         type: "loHi",
         low: true,
         high: false,
@@ -16,7 +16,7 @@ var alleleDominance = {
         medium: true,
         high: false
     },
-    speedConfidence: {
+    velocityConfidence: {
         type: "loHi",
         low: false,
         high: true
@@ -33,13 +33,13 @@ var alleleDominance = {
         medium: true,
         high: false
     },
-    objectAffectsSpeed: {
+    objectAffectsVelocity: {
         type: "loMedHi",
         low: false,
         medium: true,
         high: false
     },
-    speedObjectEffect: {
+    velocityObjectEffect: {
         type: "loHi",
         low: true,
         high: false
@@ -55,13 +55,13 @@ var alleleDominance = {
         low: true,
         high: false
     },
-    objectAffectsSpeedConfidence: {
+    objectAffectsVelocityConfidence: {
         type: "loMedHi",
         low: false,
         medium: true,
         high: false
     },
-    speedConfidenceObjectEffect: {
+    velocityConfidenceObjectEffect: {
         type: "loHi",
         low: true,
         high: false
@@ -99,7 +99,7 @@ var alleleDominance = {
         medium: true,
         high: false
     }, 
-    speedBias: {
+    velocityBias: {
         type: "loMedHi",
         low: false,
         medium: true,
