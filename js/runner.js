@@ -146,6 +146,7 @@ RunnerController.prototype = {
             this.model.velocity = Vector.fromAngle(currentAngle).scale(mag);
             this.emit("moveDecisionMade", {pos:this.model.position.copy(), vel:this.model.velocity.copy()});*/
             this.model.acceleration = new Vector(Math.random() * 2 - 1, Math.random() * 2 - 1);
+            this.model.acceleration.limit(-1, 1, -1, 1);
         }
     },
     

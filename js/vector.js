@@ -48,5 +48,11 @@ Vector.prototype = {
     },
     toString: function() {
         return "(" + toDecimalPlaces(this.x, 4) + ", " + toDecimalPlaces(this.y, 4) + ")";
+    },
+    limit: function(x0, x1, y0, y1) {
+        if(this.x < x0) this.x = x0;
+        if(this.x > x1) this.x = x1;
+        if(this.y < y0) this.y = y0;
+        if(this.y > y1) this.y = y1;
     }
 }
