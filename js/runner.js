@@ -39,10 +39,10 @@ function RunnerModel(genes) {
     this.index = game.runners.length;
     this.position = new Vector(randomInt(0, game.width), randomInt(0, game.height));
     this.velocity = new Vector(0, 0);//(randomInt(0, game.width), randomInt(0, game.height));
-    this.acceleration = new Vector(1, 0);//Math.random() * 2 - 1, Math.random() * 2 - 1);
+    this.acceleration = new Vector(Math.random() * 4 - 2, Math.random() * 4 - 2);
     this.lastPosition = this.position.copy();
     this.angleConfidence = this.genes.get("angleConfidence");
-    this.pathConfidence = this.genes.get("pathConfidence");
+    this.pathConfidence = 0.99//this.genes.get("pathConfidence");
     this.velocityConfidence = this.genes.get("velocityConfidence");
     this.directionalBias = this.genes.get("directionalBias");
     this.velocityBias = this.genes.get("velocityBias");
@@ -64,19 +64,17 @@ function RunnerView(model, context) {
 
 RunnerView.prototype = {
     destroy: function() {
-        game.off('render');
+        //game.off('render');
     },
     
     render: function() {
-        this.context.lineWidth = 2;
-        
         this.renderEyes();
     },
     
     renderEyes: function() {
         this.context.save();
         
-        this.context.translate(this.model.position.x, this.model.position.y);
+        this.context.translate(this.model.tail.model.segments[0].model.position.x, this.model.tail.model.segments[0].model.position.y);
         
         this.context.rotate(degToRad(this.model.velocity.toAngle()));
         
@@ -121,32 +119,33 @@ RunnerController.prototype = {
         this.model.position.x = nextX;
         this.model.position.y = nextY;
         // acceleration only lasts for one update!
-        if(!this.model.acceleration.equalTo(new Vector(0, 0))) {
+        if(game.timestepSquared == 1 && !this.model.acceleration.equalTo(new Vector(0, 0))) {
             this.model.acceleration = new Vector(0,0);
         }
+        this.checkForBoundaries();
     },
     
     checkForBoundaries: function() {
-        if(this.model.position.x + this.model.velocity.x < 0 || this.model.position.x + this.model.velocity.x > game.width) {
-            this.model.velocity.x = -this.model.velocity.x;
-            this.emit("moveDecisionMade", {pos:this.model.position.copy(), vel:this.model.velocity.copy()});
+        if(this.model.position.x < 0 || this.model.position.x > game.width) {
+            this.model.position.x -= this.model.velocity.x * 2;
         }
-        if(this.model.position.y + this.model.velocity.y < 0 || this.model.position.y + this.model.velocity.y > game.height) {
-            this.model.velocity.y = -this.model.velocity.y;
-            this.emit("moveDecisionMade", {pos:this.model.position.copy(), vel:this.model.velocity.copy()});
+        if(this.model.position.y < 0 || this.model.position.y > game.height) {
+            this.model.position.y -= this.model.velocity.y * 2;
         }
     },
     
     changeDirection: function() {
         if(Math.random() > this.model.pathConfidence) {
-            /*var currentAngle = this.model.velocity.toAngle(),
+            var currentAngle = this.model.velocity.toAngle(),
                 mag = this.model.velocity.mag(),
-                angleChange = ((Math.random() * 2) - 1) * 45;
+                angleChange = ((Math.random() * 2) - 1) * 5;
+            console.log("current velocity: " + this.model.velocity);
+            console.log("current angle: " + currentAngle);
             currentAngle += angleChange;
-            this.model.velocity = Vector.fromAngle(currentAngle).scale(mag);
-            this.emit("moveDecisionMade", {pos:this.model.position.copy(), vel:this.model.velocity.copy()});*/
-            this.model.acceleration = new Vector(Math.random() * 2 - 1, Math.random() * 2 - 1);
-            this.model.acceleration.limit(-1, 1, -1, 1);
+            console.log("new Angle: " + currentAngle);
+            var vel = Vector.fromAngle(currentAngle);
+            console.log("new velocity: " + vel);
+            this.model.position.increment(vel);
         }
     },
     
@@ -206,13 +205,13 @@ RunnerController.prototype = {
         
         switch(Math.round(genes.get("tailLength") * 2)) {
             case 0:
-                model.tailLength = randomInt(2, 5);
+                model.tailLength = randomInt(3, 10);
                 break;
             case 1:
-                model.tailLength = randomInt(5,10);
+                model.tailLength = randomInt(10, 18);
                 break;
             case 2:
-                model.tailLength = randomInt(10, 20);
+                model.tailLength = randomInt(18, 26);
                 break;
         }
         
