@@ -1,34 +1,59 @@
-function RunnerModel() {
-    this.genes = new dna({
-    behaviour: new Chromosome(
-        ["pathConfidence", 
-         "angleConfidence", 
-         "velocityConfidence", 
-         "senseRadius",
-         "caresAboutObjects",
-         "objectAffectsVelocity",
-         "velocityObjectEffect",
-         "objectAffectsDirectionalBias",
-         "directionalBiasObjectEffect",
-         "objectAffectsVelocityConfidence",
-         "velocityConfidenceObjectEffect",
-         "objectAffectsAngleConfidence",
-         "angleConfidenceObjectEffect",
-         "objectAffectsPathConfidence",
-         "pathConfidenceObjectEffect",
-         "directionalBias",
-         "velocityBias"
-        ]),
-     appearance: new Chromosome(
-         ["tailLength", 
-          "size",
-          "colourVariation",
-          "brightnessVariation",
-          "red", 
-          "green",
-          "blue"
-         ])
-    });
+function RunnerModel(genes) {
+    if(!!genes) {
+        this.genes = genes;
+        this.isOffspring = true;
+    } else {
+        this.isOffspring = false;
+        this.genes = new dna({
+        behaviour: new Chromosome(
+            ["pathConfidence", 
+             "angleConfidence", 
+             "velocityConfidence", 
+             "senseRadius",
+             "caresAboutObjects",
+             "objectAffectsVelocity",
+             "velocityObjectEffect",
+             "objectAffectsDirectionalBias",
+             "directionalBiasObjectEffect",
+             "objectAffectsVelocityConfidence",
+             "velocityConfidenceObjectEffect",
+             "objectAffectsAngleConfidence",
+             "angleConfidenceObjectEffect",
+             "objectAffectsPathConfidence",
+             "pathConfidenceObjectEffect",
+             "directionalBias",
+             "velocityBias"
+            ]),
+         appearance: new Chromosome(
+             ["tailLength", 
+              "size",
+              "colourVariation",
+              "stripy",
+              "red", 
+              "green",
+              "blue"
+             ])
+        });
+        this.genes.generateRandomData();
+    }
+    this.index = game.runners.length;
+    this.position = new Vector(randomInt(0, game.width), randomInt(0, game.height));
+    this.velocity = new Vector(0, 0);//(randomInt(0, game.width), randomInt(0, game.height));
+    this.acceleration = new Vector(1, 0);//Math.random() * 2 - 1, Math.random() * 2 - 1);
+    this.lastPosition = this.position.copy();
+    this.angleConfidence = this.genes.get("angleConfidence");
+    this.pathConfidence = this.genes.get("pathConfidence");
+    this.velocityConfidence = this.genes.get("velocityConfidence");
+    this.directionalBias = this.genes.get("directionalBias");
+    this.velocityBias = this.genes.get("velocityBias");
+    var r = parseInt(this.genes.get("red") * 255),
+        g = parseInt(this.genes.get("green") * 255),
+        b = parseInt(this.genes.get("blue") * 255);
+    this.colour = {r:r, g:g, b:b};
+    this.size = mapValue(this.genes.get("size"), 0, 1, 10, 20);
+    this.framesInExistance = 0;
+    
+    this.type = "runner";
 }
 
 function RunnerView(model, context) {
@@ -38,18 +63,22 @@ function RunnerView(model, context) {
 }
 
 RunnerView.prototype = {
+    destroy: function() {
+        game.off('render');
+    },
+    
     render: function() {
         this.context.lineWidth = 2;
         
-        this.renderEyes(this.model.tail[0].model);
+        this.renderEyes();
     },
     
-    renderEyes: function(segment) {
+    renderEyes: function() {
         this.context.save();
         
-        this.context.translate(segment.position.x, segment.position.y);
+        this.context.translate(this.model.position.x, this.model.position.y);
         
-        this.context.rotate(degToRad(segment.velocity.toAngle()));
+        this.context.rotate(degToRad(this.model.velocity.toAngle()));
         
         this.context.strokeWidth = this.model.size / 10;
         this.context.strokeStyle = this.model.selected ? rgbObjToHexColourString({r:255, g:0, b:255}) : "#000000";
@@ -71,20 +100,30 @@ RunnerView.prototype = {
 function RunnerController(model) {
     Events(this);
     this.model = model;
-    this.setupAttributes();
+    this.setupTail();
     this.view = new RunnerView(model, game.context);
     game.on('update', this.update, this);
+    game.on('generationEnded', this.destroy, this);
 }
 
 RunnerController.prototype = {
     
     advance: function() {
-        var speedChange = mapValue(this.model.velocityConfidence, 0, 1, randomInt(0, 2), 0);
-        if (Math.random() > this.model.velocityBias) {
-            speedChange = -speedChange;
+        // Inertia: objects in motion stay in motion.
+        this.model.velocity.x = this.model.position.x - this.model.lastPosition.x;
+        this.model.velocity.y = this.model.position.y - this.model.lastPosition.y;
+                
+        var nextX = this.model.position.x + this.model.velocity.x + this.model.acceleration.x * game.timestepSquared,
+            nextY = this.model.position.y + this.model.velocity.y + this.model.acceleration.y * game.timestepSquared;
+        
+        this.model.lastPosition = this.model.position.copy();
+        
+        this.model.position.x = nextX;
+        this.model.position.y = nextY;
+        // acceleration only lasts for one update!
+        if(!this.model.acceleration.equalTo(new Vector(0, 0))) {
+            this.model.acceleration = new Vector(0,0);
         }
-        this.model.position.add(this.model.velocity);
-        this.checkForBoundaries();
     },
     
     checkForBoundaries: function() {
@@ -96,18 +135,25 @@ RunnerController.prototype = {
             this.model.velocity.y = -this.model.velocity.y;
             this.emit("moveDecisionMade", {pos:this.model.position.copy(), vel:this.model.velocity.copy()});
         }
-        
     },
     
     changeDirection: function() {
-        if(this.model.framesInExistance % 25 == 0/*Math.random() > this.model.pathConfidence*/) {
-            var currentAngle = this.model.velocity.toAngle(),
+        if(Math.random() > this.model.pathConfidence) {
+            /*var currentAngle = this.model.velocity.toAngle(),
                 mag = this.model.velocity.mag(),
                 angleChange = ((Math.random() * 2) - 1) * 45;
             currentAngle += angleChange;
             this.model.velocity = Vector.fromAngle(currentAngle).scale(mag);
-            this.emit("moveDecisionMade", {pos:this.model.position.copy(), vel:this.model.velocity.copy()});
+            this.emit("moveDecisionMade", {pos:this.model.position.copy(), vel:this.model.velocity.copy()});*/
+            this.model.acceleration = new Vector(Math.random() * 2 - 1, Math.random() * 2 - 1);
+            this.model.acceleration.limit(-1, 1, -1, 1);
         }
+    },
+    
+    destroy: function() {
+        game.off('update', this.update, this);
+        game.off('generationEnded', this.destroy, this);;
+        this.view.destroy();
     },
     
     detectObjects: function() {
@@ -143,80 +189,46 @@ RunnerController.prototype = {
     getDistanceToNearestObject: function() {
         var nearestObj = this.getNearestObject();
         if(!!nearestObj) {
-            return distance(this.model.position, this.getNearestObject().position);
+            var dist = distance(this.model.position, this.getNearestObject().position);
+            if(nearestObj.type == "ball" && dist < nearestObj.radius) {
+                game.emit("runnerCollidedWithBall", {runner: this});
+            }
+            return distance;
         } else {
             return -1;
         }
     },
     
-    setupAttributes: function() {
-        var model = this.model,
-            genes = this.model.genes;
-        genes.generateRandomData();
-        model.position = new Vector(game.width/2, game.height/2);//(randomInt(0, game.width), randomInt(0, game.height));
-        model.prevPosition = model.position.copy();
-        model.angleConfidence = genes.get("angleConfidence");
-        model.pathConfidence = genes.get("pathConfidence");
-        model.velocityConfidence = genes.get("velocityConfidence");
-        model.directionalBias = genes.get("directionalBias");
-        model.velocityBias = genes.get("velocityBias");
-        var r = parseInt(genes.get("red") * 255),
-            g = parseInt(genes.get("green") * 255),
-            b = parseInt(genes.get("blue") * 255);
-        model.colour = {r:r, g:g, b:b};
-        model.size = mapValue(genes.get("size"), 0, 1, 10, 20);
-        model.velocity = new Vector(Math.random() * 2 - 1, Math.random() * 2 - 1);
-        model.framesInExistance = 0;
-        this.setupTail();
-        
-//        console.log(model.genes);
-    },
     
     setupTail: function() {
         var model = this.model,
             genes = this.model.genes;
         
-        model.tail = [];
-        
         switch(Math.round(genes.get("tailLength") * 2)) {
             case 0:
-                model.tailLength = randomInt(10, 20);
+                model.tailLength = randomInt(2, 5);
                 break;
             case 1:
-                model.tailLength = randomInt(20,30);
+                model.tailLength = randomInt(5,10);
                 break;
             case 2:
-                model.tailLength = randomInt(30, 40);
+                model.tailLength = randomInt(10, 20);
                 break;
-        } 
-        
-        //debug
-        model.tailLength = 25;
-        
-        
-        for(var i = 0; i < model.tailLength; i++) {
-            var size = mapValue(i, 0, model.tailLength, model.size, model.size * 0.4), 
-                index = i,
-                parent = model.tail[i-1] ? model.tail[i-1].model : model,
-                currentSegment = new SegmentController(new SegmentModel(index, size, model.colour, genes.get("brightnessVariation")), parent);
-            
-            this.on('moveDecisionMade', currentSegment.onMoveDecisionMade, currentSegment);
-            
-            model.tail.push(currentSegment);
         }
-                    
+        
+        model.tail = new TailController(new TailModel(model.tailLength, model.size, model.colour, genes.get("stripy"), this));
     },
     
     reactToObjects: function() {
         var distanceToNearestObject = this.getDistanceToNearestObject();
         if(distanceToNearestObject > -1) {
             var normalisedDistance = mapValue(distanceToNearestObject, 0, this.model.genes.get("senseRadius") * 100, 0, 1);
-            
+            /*
             //velocity
             this.model.velocity = this.affectTraitByDistanceToObject(this.model.originalvelocity, 
                                                                   normalisedDistance, 
                                                                   this.model.genes.get("velocityObjectEffect"), 
-                                                                  this.model.genes.get("objectAffectsSpeed"));
+                                                                  this.model.genes.get("objectAffectsSpeed"));*/
             
             //direction
             this.model.directionalBias = this.affectTraitByDistanceToObject(this.model.genes.get("directionalBias"),
@@ -240,7 +252,6 @@ RunnerController.prototype = {
                                                                            this.model.genes.get("objectAffectsPathConfidence"));
             
         } else {
-            this.model.velocity = this.model.originalVelocity;
             this.model.directionalBias = this.model.genes.get("directionalBias");
             this.model.velocityConfidence = this.model.genes.get("velocityConfidence");
             this.model.angleConfidence = this.model.genes.get("angleConfidence");
@@ -257,7 +268,7 @@ RunnerController.prototype = {
     update:function() {
 //        this.reactToObjects();
         this.changeDirection();
-        this.advance(this.model.velocity);
+        this.advance();
         this.model.framesInExistance++;
     }
     

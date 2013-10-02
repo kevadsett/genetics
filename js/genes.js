@@ -7,30 +7,43 @@ function Allele(type, value, dominant) {
 Allele.prototype = {
     generateRandomData: function() {
         var randomValue = Math.random();
-        if(allelDominance[this.type].type == "loMedHi") {
+        if(alleleDominance[this.type].type == "loMedHi") {
             switch (true) {
                 case randomValue < 0.3333:
                     this.stringValue = "low";
-                    this.dominant = allelDominance[this.type].low;
+                    this.dominant = alleleDominance[this.type].low;
                     break;
                 case randomValue < 0.6667:
                     this.stringValue = "medium";
-                    this.dominant = allelDominance[this.type].medium;
+                    this.dominant = alleleDominance[this.type].medium;
                     break;
                 case randomValue <= 1:
                     this.stringValue = "high";
-                    this.dominant = allelDominance[this.type].high;
+                    this.dominant = alleleDominance[this.type].high;
                 break;
             }
-        } else if (allelDominance[this.type].type == "loHi") {
+        } else if (alleleDominance[this.type].type == "loHi") {
             switch (true) {
                 case randomValue < 0.5:
                     this.stringValue = "low";
-                    this.dominant = allelDominance[this.type].low;
+                    this.dominant = alleleDominance[this.type].low;
                     break;
                 case randomValue <=1:
                     this.stringValue = "high";
-                    this.dominant = allelDominance[this.type].high;
+                    this.dominant = alleleDominance[this.type].high;
+                break;
+            }
+        } else if (alleleDominance[this.type].type == "onOff") {
+            switch (true) {
+                case randomValue < 0.5:
+                    this.stringValue = "low";
+                    this.dominant = alleleDominance[this.type].low;
+                    randomValue = 0;
+                    break;
+                case randomValue <=1:
+                    this.stringValue = "high";
+                    this.dominant = alleleDominance[this.type].high;
+                    randomValue = 1;
                 break;
             }
         }
@@ -56,6 +69,10 @@ Chromosome.prototype = {
                 this.strands[i][key].generateRandomData()
             }
         }
+    },
+    populateData: function(strand1, strand2) {
+        this.strands[0] = cloneObject(strand1);
+        this.strands[1] = cloneObject(strand2);
     },
     setValue:function(type, value) {
         this.strands[0][type].value = this.strands[1][type].value = value;
@@ -83,6 +100,60 @@ Chromosome.prototype = {
                 }
             }
         }
+    },
+    crossover: function() {
+        var resultingChromosome = cloneObject(this);
+        var crossoverPoint = this.loci.length;
+        if(Math.random() > 0.5) {
+            crossoverPoint = randomInt(0, this.loci.length);
+        } else {
+            return resultingChromosome;
+        }
+        
+        for(var i = 0; i < this.loci.length; i++) {
+            var type = this.loci[i];
+            var alleles = [cloneObject(resultingChromosome.strands[0][type]), cloneObject(resultingChromosome.strands[1][type])];
+            if(i >= crossoverPoint) {
+                resultingChromosome.strands[0][type] = alleles[1];
+                resultingChromosome.strands[1][type] = alleles[0];
+            }
+        }
+        return resultingChromosome;
+    },
+    conversion: function() {
+        var resultingChromosome = cloneObject(this);
+        var conversionPoints = [0, this.loci.length];
+        if(Math.random() > 0.5) {
+            for(var i = 0; i < 2; i++) {
+                conversionPoints[i] = randomInt(0, this.loci.length)
+            }
+            conversionPoints.sort(function compare(a, b) {
+              if (a < b) return -1;
+              if (a > b) return 1;
+              return 0;
+            });
+            if(conversionPoints[0] == conversionPoints[1]){
+                return resultingChromosome;
+            }
+        } else {
+            return resultingChromosome;
+        }
+        
+        
+        for(var i = 0; i < this.loci.length; i++) {
+            var type = this.loci[i];
+            var alleles = [resultingChromosome.strands[0][type], resultingChromosome.strands[1][type]];
+            if(i >= conversionPoints[0] && i < conversionPoints[1]) {
+                resultingChromosome.strands[0][type] = alleles[1];
+                resultingChromosome.strands[1][type] = alleles[0];
+            }
+        }
+        return resultingChromosome;
+    },
+    mutation: function() {
+        var resultingChromosome = cloneObject(this);
+        // TODO
+        return resultingChromosome;
     }
 }
 
@@ -100,9 +171,22 @@ dna.prototype = {
         }
     },
     meiosis: function() {
-        for(var key in this.chromosomes) {
-            console.log(key);
+        var chromeCopies = [cloneObject(this.chromosomes), cloneObject(this.chromosomes)];
+        var daughterCells = [{},{},{},{}];
+        for(var i = 0; i < chromeCopies.length; i++) {
+            for(var key in chromeCopies[i]) {
+                chromeCopies[i][key] = chromeCopies[i][key].crossover().conversion().mutation();
+                daughterCells[0][key] = chromeCopies[0][key].strands[0];
+                daughterCells[1][key] = chromeCopies[0][key].strands[1];
+                daughterCells[2][key] = chromeCopies[1][key].strands[0];
+                daughterCells[3][key] = chromeCopies[1][key].strands[1];
+            }
         }
+        for(var key in chromeCopies[i]) {
+            
+        }
+        return daughterCells;
+        
     },
     get: function(key) {
         if(this.chromosomes[key]) {
@@ -116,4 +200,16 @@ dna.prototype = {
             }
         }
     }
+}
+
+function makeABaby(parent1, parent2) {
+    var parent1Cells = parent1.genes.meiosis(),
+        parent2Cells = parent2.genes.meiosis(),
+        babyChromosomes = {},
+        seeds = [randomInt(0,4), randomInt(0,4)];
+    for(var key in parent1.genes.chromosomes) {
+        babyChromosomes[key] = new Chromosome(parent1.genes.chromosomes[key].loci);
+        babyChromosomes[key].populateData(parent1Cells[seeds[0]][key], parent1Cells[seeds[1]][key]);
+    }
+    return new dna(babyChromosomes);
 }

@@ -1,4 +1,4 @@
-var allelDominance = {
+var alleleDominance = {
     velocity: {
         type: "loHi",
         low: true,
@@ -89,10 +89,9 @@ var allelDominance = {
         high: true
     },
     tailLength: {
-        type: "loMedHi",
+        type: "loHi",
         low: false,
-        medium: true,
-        high: false
+        high: true
     }, 
     directionalBias: {
         type: "loMedHi",
@@ -118,11 +117,10 @@ var allelDominance = {
         medium: false,
         high: true
     },
-    brightnessVariation: {
-        type: "loMedHi",
-        low: false,
-        medium: false,
-        high: true
+    stripy: {
+        type: "onOff",
+        on: true,
+        off: false
     },
     red: {
         type: "loHi",
@@ -131,8 +129,8 @@ var allelDominance = {
     }, 
     green: {
         type: "loHi",
-        low: true,
-        high: false
+        low: false,
+        high: true
     },
     blue: {
         type: "loHi",

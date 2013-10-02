@@ -10,9 +10,7 @@ Vector.fromAngle = function(angle) {
 
 Vector.prototype = {
     add: function(vector) {
-        this.x += vector.x;
-        this.y += vector.y;
-        return this;
+        return new Vector(this.x + vector.x, this.y + vector.y);
     },
     copy: function() {
         return new Vector(this.x, this.y);
@@ -25,6 +23,11 @@ Vector.prototype = {
             y = distance * Math.sin(degToRad(this.toAngle()));
         return new Vector(-x,-y);
     },
+    increment: function(vector) {
+        this.x += vector.x;
+        this.y += vector.y;
+        return this;
+    },
     mag: function() {
         return Math.sqrt(this.x * this.x + this.y * this.y);
     },
@@ -32,7 +35,7 @@ Vector.prototype = {
         return new Vector(this.x * newScale, this.y * newScale);
     },
     sub: function(vector) {
-        return new Vector(vector.x - this.x, vector.y, this.y);
+        return new Vector(this.x - vector.x, this.y - vector.y);
     },
     toAngle: function() {
         var quadrantStartAngle = 0;
@@ -44,6 +47,12 @@ Vector.prototype = {
         return (360 + quadrantStartAngle + radToDeg(Math.atan(this.y/this.x))) % 360;
     },
     toString: function() {
-        return "(" + Math.round(this.x) + ", " + Math.round(this.y) + ")";
+        return "(" + toDecimalPlaces(this.x, 4) + ", " + toDecimalPlaces(this.y, 4) + ")";
+    },
+    limit: function(x0, x1, y0, y1) {
+        if(this.x < x0) this.x = x0;
+        if(this.x > x1) this.x = x1;
+        if(this.y < y0) this.y = y0;
+        if(this.y > y1) this.y = y1;
     }
 }

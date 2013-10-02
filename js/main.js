@@ -11,11 +11,6 @@ function Game() {
     $(document).ready($.proxy(function() {
         Events(this);
         $('body').append('<div id="canvasContainer"><canvas id="gameCanvas"></canvas></div>');
-        this.lastCalledTime = new Date().getTime();
-        this.numberOfDudes = 1;
-        this.frame = 0;
-        this.slowFrameRate = 1;
-        this.fps = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
         this.setup();
         this.loop();
     }, this));
@@ -24,14 +19,19 @@ function Game() {
 Game.prototype = {
     loop: function() {
         requestAnimFrame($.proxy(this.loop, this));
-        if((this.frame % this.slowFrameRate) == 0) {
+        
+        var currentTime = new Date().getTime(),
+            elapsedTime = currentTime - this.lastCalledTime + this.leftOverTime;
+        this.lastCalledTime = currentTime;
+        var timeSteps = Math.floor(elapsedTime / 16);
+        this.leftOverTime = elapsedTime - timeSteps * 16;
+        for(var i = 0; i < timeSteps; i++) {
+            this.timestepSquared = i * i;
             this.update();
-            this.render();
         }
-        this.frame++;
-        var deltaTime = (new Date().getTime() - this.lastCalledTime) / 1000;
-        this.lastCalledTime = new Date().getTime();
-        this.fps[this.frame & this.fps.length] = Math.round(1/deltaTime);
+        this.render();
+        
+        this.fps[this.frame & this.fps.length] = 1/elapsedTime;
         this.averageFPS = 0;
         for(var i = 0; i < this.fps.length; i++) {
             this.averageFPS += this.fps[i];
@@ -60,10 +60,19 @@ Game.prototype = {
     setup: function() {
         this.canvas = document.getElementById('gameCanvas');
         this.context = this.canvas.getContext('2d');
+        
+        this.lastCalledTime = new Date().getTime();
+        this.leftOverTime = 0;
+        this.runnersPerGeneration = 50;
+        this.frame = 0;
+        this.slowFrameRate = 1;
+        this.fps = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
+        this.NUM_CONSTRAINT_SOLVE = 3;
+        
         this.resizeCanvas();
 //        $(window).on('resize', this.resizeCanvas, this);
         this.runners = [];
-        for(var i = 0; i < this.numberOfDudes; i++) {
+        for(var i = 0; i < this.runnersPerGeneration; i++) {
             this.runners.push(new RunnerController(new RunnerModel()));
         }
         this.ball = new BallController(new BallModel());
