@@ -18,10 +18,10 @@ Vector.prototype = {
     equalTo: function(vector) {
         return vector.x == this.x && vector.y == this.y;
     },
-    getPositionBehind: function(distance) {
-        var x = distance * Math.cos(degToRad(this.toAngle())),
-            y = distance * Math.sin(degToRad(this.toAngle()));
-        return new Vector(-x,-y);
+    getRelativePosition: function(distance, angle) {
+        var x = distance * Math.cos(degToRad(angle ? angle : this.toAngle())),
+            y = distance * Math.sin(degToRad(angle ? angle : this.toAngle()));
+        return new Vector(x,y);
     },
     increment: function(vector) {
         this.x += vector.x;
@@ -44,10 +44,10 @@ Vector.prototype = {
         } else {
             quadrantStartAngle = 180;
         }
-        return (360 + quadrantStartAngle + radToDeg(Math.atan(this.y/this.x))) % 360;
+        return (360 + quadrantStartAngle + radToDeg(Math.atan(this.y/this.x))) % 360 || 0;
     },
     toString: function() {
-        return "(" + toDecimalPlaces(this.x, 4) + ", " + toDecimalPlaces(this.y, 4) + ")";
+        return "(" + toDecimalPlaces(this.x, 2) + ", " + toDecimalPlaces(this.y, 2) + ")";
     },
     limit: function(x0, x1, y0, y1) {
         if(this.x < x0) this.x = x0;

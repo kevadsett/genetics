@@ -63,7 +63,7 @@ Game.prototype = {
         
         this.lastCalledTime = new Date().getTime();
         this.leftOverTime = 0;
-        this.runnersPerGeneration = 50;
+        this.runnersPerGeneration = 1;
         this.frame = 0;
         this.slowFrameRate = 1;
         this.fps = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
@@ -75,11 +75,11 @@ Game.prototype = {
         for(var i = 0; i < this.runnersPerGeneration; i++) {
             this.runners.push(new RunnerController(new RunnerModel()));
         }
-        this.ball = new BallController(new BallModel());
+        //this.ball = new BallController(new BallModel());
         
         this.canvas.onclick = $.proxy(function(event) {
             var canvasBounds = event.target.getBoundingClientRect();
-            this.ball.moveTo(event.clientX - canvasBounds.left, event.clientY - canvasBounds.top);
+            //this.ball.moveTo(event.clientX - canvasBounds.left, event.clientY - canvasBounds.top);
         }, this);
         
     },
