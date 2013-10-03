@@ -63,7 +63,7 @@ Game.prototype = {
         
         this.lastCalledTime = new Date().getTime();
         this.leftOverTime = 0;
-        this.runnersPerGeneration = 1;
+        this.runnersPerGeneration = 12;
         this.frame = 0;
         this.slowFrameRate = 1;
         this.fps = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0];

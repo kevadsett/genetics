@@ -39,10 +39,10 @@ function RunnerModel(genes) {
     this.index = game.runners.length;
     this.position = new Vector(randomInt(0, game.width), randomInt(0, game.height));
     this.velocity = new Vector(0, 0);//(randomInt(0, game.width), randomInt(0, game.height));
-    this.acceleration = new Vector(Math.random() * 4 - 2, Math.random() * 4 - 2);
+    this.acceleration = new Vector(Math.random() * 2 - 1, Math.random() * 2 - 1);
     this.lastPosition = this.position.copy();
     this.angleConfidence = this.genes.get("angleConfidence");
-    this.pathConfidence = 0.99//this.genes.get("pathConfidence");
+    this.pathConfidence = this.genes.get("pathConfidence");
     this.velocityConfidence = this.genes.get("velocityConfidence");
     this.directionalBias = this.genes.get("directionalBias");
     this.velocityBias = this.genes.get("velocityBias");
@@ -72,6 +72,9 @@ RunnerView.prototype = {
     },
     
     renderEyes: function() {
+        this.context.lineCap = "square";
+        this.context.lineWidth = 2;
+        
         this.context.save();
         
         this.context.translate(this.model.tail.model.segments[0].model.position.x, this.model.tail.model.segments[0].model.position.y);
@@ -107,19 +110,22 @@ function RunnerController(model) {
 RunnerController.prototype = {
     
     advance: function() {
+        if(game.timestepSquared > 0) console.log("-----")
         // Inertia: objects in motion stay in motion.
         this.model.velocity.x = this.model.position.x - this.model.lastPosition.x;
         this.model.velocity.y = this.model.position.y - this.model.lastPosition.y;
-                
-        var nextX = this.model.position.x + this.model.velocity.x + this.model.acceleration.x * game.timestepSquared,
-            nextY = this.model.position.y + this.model.velocity.y + this.model.acceleration.y * game.timestepSquared;
-        
+        if(game.timestepSquared > 0) console.log("this.model.velocity: " + this.model.velocity);
+        if(game.timestepSquared > 0) console.log("this.model.acceleration: " + this.model.acceleration);
+        var nextXInc = this.model.velocity.x + this.model.acceleration.x * game.timestepSquared,
+            nextYInc = this.model.velocity.y + this.model.acceleration.y * game.timestepSquared;
+        if(game.timestepSquared > 0) console.log("next position increment: " + new Vector(nextXInc, nextYInc));
         this.model.lastPosition = this.model.position.copy();
         
-        this.model.position.x = nextX;
-        this.model.position.y = nextY;
+        this.model.position.increment(new Vector(nextXInc, nextYInc));
+        
+        if(game.timestepSquared > 0) console.log("this.model.position: " + this.model.position);
         // acceleration only lasts for one update!
-        if(game.timestepSquared == 1 && !this.model.acceleration.equalTo(new Vector(0, 0))) {
+        if(game.timestepSquared > 0) {
             this.model.acceleration = new Vector(0,0);
         }
         this.checkForBoundaries();
@@ -145,7 +151,7 @@ RunnerController.prototype = {
             console.log("new Angle: " + currentAngle);
             var vel = Vector.fromAngle(currentAngle);
             console.log("new velocity: " + vel);
-            this.model.position.increment(vel);
+            this.model.acceleration = vel.sub(this.model.velocity);
         }
     },
     

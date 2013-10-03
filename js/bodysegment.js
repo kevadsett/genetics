@@ -35,9 +35,9 @@ SegmentView.prototype = {
         
         this.context.translate(this.model.position.x, this.model.position.y);
         this.context.rotate(degToRad(this.model.velocity.toAngle()));
-        
+        var sizeMultiple = 0.5;
         this.context.fillStyle = this.model.colour;
-        this.context.fillRect(-this.model.size/2, -this.model.size/2, this.model.size, this.model.size);
+//        this.context.fillRect(-this.model.size * sizeMultiple, -this.model.size * sizeMultiple, this.model.size * sizeMultiple * 2, this.model.size * sizeMultiple * 2);
         /*this.context.beginPath();
         this.context.arc(0, 0, this.model.size/2, 0, degToRad(360));
         this.context.globalAlpha = 0.2;
@@ -46,14 +46,40 @@ SegmentView.prototype = {
         this.context.globalAlpha = 1;*/
         this.context.restore();
         
-        /*this.context.beginPath();
-        this.context.moveTo(this.model.points.left.x, this.model.points.left.y);
-        this.context.lineTo(this.model.points.right.x, this.model.points.right.y);
-        this.context.moveTo(this.model.points.front.x, this.model.points.front.y);
-        this.context.lineTo(this.model.points.back.x, this.model.points.back.y);
-        this.context.stroke();
-        this.context.closePath();*/
         
+        var debugBones = false;
+        if(debugBones) {
+            var centre = this.model.position;
+            var points = this.model.points;
+            this.context.lineWidth = 1;
+            this.context.beginPath();
+            this.context.strokeStyle = "#FF0000";
+            this.context.moveTo(centre.x, centre.y);
+            this.context.lineTo(points.right.x, points.right.y);
+            this.context.stroke();
+            this.context.closePath();
+            
+            this.context.beginPath();
+            this.context.strokeStyle = "#00FF00";
+            this.context.moveTo(centre.x, centre.y);
+            this.context.lineTo(points.left.x, points.left.y);
+            this.context.stroke();
+            this.context.closePath();
+            
+            this.context.beginPath();
+            this.context.strokeStyle = "#0000FF";
+            this.context.moveTo(centre.x, centre.y);
+            this.context.lineTo(points.front.x, points.front.y);
+            this.context.stroke();
+            this.context.closePath();
+            
+            this.context.beginPath();
+            this.context.strokeStyle = "#000000";
+            this.context.moveTo(centre.x, centre.y);
+            this.context.lineTo(points.back.x, points.back.y);
+            this.context.stroke();
+            this.context.closePath();
+        }
         
     }
 }
@@ -72,7 +98,7 @@ SegmentController.prototype = {
     
     getTangent: function() {
         var tangent = this.model.velocity.toAngle();
-        tangent = (360 + tangent + 45) % 360;
+        tangent = (360 + tangent + 90) % 360;
         return tangent;
     },
     
