@@ -189,16 +189,16 @@ RunnerController.prototype = {
         return nearestObject;
     },
     
-    getDistanceToNearestObject: function() {
-        var nearestObj = this.getNearestObject();
-        if(!!nearestObj) {
-            var dist = distance(this.model.position, this.getNearestObject().position);
-            if(nearestObj.type == "ball" && dist < nearestObj.radius) {
+    getDistanceToBall: function() {
+        var ballModel = game.ball.model;
+        if(!!ballModel) {
+            var dist = distance(this.model.position, ballModel.position);
+            if(dist < ballModel.radius) {
                 game.emit("runnerCollidedWithBall", {runner: this});
+                return dist;
+            } else {
+                return -1;
             }
-            return distance;
-        } else {
-            return -1;
         }
     },
     
@@ -209,9 +209,9 @@ RunnerController.prototype = {
             genes.generateRandomData();
         }
         model.position = new Vector(randomInt(0, game.width), randomInt(0, game.height));
-        model.angleConfidence = 1//genes.get("angleConfidence");
-        model.pathConfidence = 1//genes.get("pathConfidence");
-        model.speedConfidence = 1//genes.get("speedConfidence");
+        model.angleConfidence = genes.get("angleConfidence");
+        model.pathConfidence = genes.get("pathConfidence");
+        model.speedConfidence = genes.get("speedConfidence");
         model.directionalBias = genes.get("directionalBias");
         model.speedBias = genes.get("speedBias");
         model.angle = randomInt(0, 360);
@@ -258,8 +258,8 @@ RunnerController.prototype = {
         }
     },
     
-    reactToObjects: function() {
-        var distanceToNearestObject = this.getDistanceToNearestObject();
+    reactToBall: function() {
+        var distanceToNearestObject = this.getDistanceToBall();
         if(distanceToNearestObject > -1) {
             var normalisedDistance = mapValue(distanceToNearestObject, 0, this.model.genes.get("senseRadius") * 100, 0, 1);
             
@@ -293,9 +293,9 @@ RunnerController.prototype = {
         } else {
             this.model.speed = this.model.originalSpeed;
             this.model.directionalBias = this.model.genes.get("directionalBias");
-            this.model.speedConfidence = 1//this.model.genes.get("speedConfidence");
-            this.model.angleConfidence = 1//this.model.genes.get("angleConfidence");
-            this.model.pathConfidence = 1//this.model.genes.get("pathConfidence");
+            this.model.speedConfidence = this.model.genes.get("speedConfidence");
+            this.model.angleConfidence = this.model.genes.get("angleConfidence");
+            this.model.pathConfidence = this.model.genes.get("pathConfidence");
         }
     },
     
@@ -306,8 +306,8 @@ RunnerController.prototype = {
     },
     
     update:function() {
-//        this.reactToObjects();
-//        this.changeDirection();
+        this.reactToBall();
+        this.changeDirection();
         this.advance(this.model.speed);
         this.model.framesInExistance++;
     }
